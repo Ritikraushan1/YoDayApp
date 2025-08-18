@@ -1,14 +1,32 @@
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
+import { StatusBar, StyleSheet, useColorScheme } from 'react-native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import AppNavigator from './src/navigation/AppNavigator';
 
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
 
+  // Custom theme
+  const MyTheme = {
+    ...(isDarkMode ? DarkTheme : DefaultTheme),
+    colors: {
+      ...(isDarkMode ? DarkTheme.colors : DefaultTheme.colors),
+      primary: '#007BFF',
+      background: isDarkMode ? '#000' : '#fff',
+    },
+  };
+
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <NewAppScreen templateFileName="App.jsx" />
-    </View>
+    <NavigationContainer theme={MyTheme}>
+      {/* ⚡️ Remove hard black background here */}
+      <SafeAreaProvider>
+        {/* Make sure status bar text is visible */}
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#4267B2' }} edges={['top', 'bottom']}>
+
+          <AppNavigator />
+        </SafeAreaView>
+      </SafeAreaProvider>
+    </NavigationContainer >
   );
 }
 
