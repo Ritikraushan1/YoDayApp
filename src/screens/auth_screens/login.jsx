@@ -11,12 +11,18 @@ import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FacebookIcon from '../../assets/icon/FacebookIcon';
 
+
 const { width } = Dimensions.get("window");
 
 const LoginScreen = ({ navigation }) => {
-    const handleFacebookSignIn = () => {
-        navigation.navigate("UpdateProfile");
+    const handleFacebookSignIn = async () => {
+        navigation.navigate("Posts");
     };
+
+    const handlePhoneLogin = () => {
+        navigation.navigate("SubmitMobile");
+    }
+
 
     return (
         <SafeAreaView style={styles.container}>
@@ -33,31 +39,42 @@ const LoginScreen = ({ navigation }) => {
                     <Text style={styles.subtitle}>Sign in to continue</Text>
 
                     {/* Facebook Login Button */}
-                    <TouchableOpacity
-                        style={styles.fbButton}
-                        activeOpacity={0.85}
-                        onPress={handleFacebookSignIn}
-                    >
-                        <FacebookIcon width={22} height={22} />
-                        <Text style={styles.fbButtonText}>Continue with Facebook</Text>
-                    </TouchableOpacity>
+                    <View style={{ gap: 8 }}>
+
+                        {/* <TouchableOpacity
+                            style={styles.fbButton}
+                            activeOpacity={0.85}
+                            onPress={handleFacebookSignIn}
+                        >
+                            <FacebookIcon width={22} height={22} />
+                            <Text style={styles.fbButtonText}>Continue with Facebook</Text>
+                        </TouchableOpacity> */}
+                        <TouchableOpacity
+                            style={styles.fbButton}
+                            activeOpacity={0.85}
+                            onPress={handlePhoneLogin}
+                        >
+                            <FacebookIcon width={22} height={22} />
+                            <Text style={styles.fbButtonText}>Continue with Mobile Number</Text>
+                        </TouchableOpacity>
+                    </View>
 
                     {/* Divider */}
-                    <View style={styles.divider}>
+                    {/* <View style={styles.divider}>
                         <View style={styles.line} />
                         <Text style={styles.dividerText}>or</Text>
                         <View style={styles.line} />
-                    </View>
+                    </View> */}
 
                     {/* Signup Option */}
-                    <TouchableOpacity
+                    {/* <TouchableOpacity
                         activeOpacity={0.8}
-                        onPress={() => navigation.navigate("SignUp")}
+                        onPress={() => handleFacebookSignUp()}
                     >
                         <Text style={styles.signupText}>
                             Don’t have an account? <Text style={styles.signupLink}>Sign up</Text>
                         </Text>
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                 </View>
             </LinearGradient>
         </SafeAreaView>

@@ -1,9 +1,9 @@
 import React from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 
-const PostCard = ({ currentPost, answer, handleAnswer }) => {
+const PostCard = ({ currentPost, answer, handleAnswer, onPress }) => {
     return (
-        <View style={styles.postScreen}>
+        <Pressable style={styles.postScreen} onPress={onPress}>
             <Text style={styles.postText}>{currentPost.content}</Text>
             <View style={styles.centerArea}>
                 <View style={styles.row}>
@@ -42,7 +42,7 @@ const PostCard = ({ currentPost, answer, handleAnswer }) => {
                     </Pressable>
                 </View>
             </View>
-        </View>
+        </Pressable>
     );
 };
 

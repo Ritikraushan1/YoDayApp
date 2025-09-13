@@ -12,9 +12,9 @@ import {
     Image,
 } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
-import { FontAwesome6 } from "@react-native-vector-icons/fontawesome6"
 import { IconMap } from '../assets/icon/MenuIcons';
-import Icon from 'react-native-vector-icons/Feather'; // Feather icons for modern look
+import { useNavigation } from '@react-navigation/native';
+import AlertModal from './AlertModal';
 
 const version = DeviceInfo.getVersion();
 const buildNumber = DeviceInfo.getBuildNumber();
@@ -22,6 +22,7 @@ const buildNumber = DeviceInfo.getBuildNumber();
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const SideMenu = ({ visible, onClose, onSelectOption }) => {
+    const navigation = useNavigation()
     const drawerAnim = useRef(new Animated.Value(-screenWidth)).current;
 
     useEffect(() => {
@@ -41,6 +42,11 @@ const SideMenu = ({ visible, onClose, onSelectOption }) => {
     }, [visible]);
 
     if (!visible) return null;
+
+    const onPressMenu = (item) => {
+        navigation.navigate(item);
+        onClose()
+    }
 
     return (
         <TouchableWithoutFeedback onPress={onClose}>
@@ -67,7 +73,7 @@ const SideMenu = ({ visible, onClose, onSelectOption }) => {
                                 <TouchableOpacity
                                     key={index}
                                     style={styles.menuItem}
-                                    onPress={() => onSelectOption(item.key)}
+                                    onPress={() => onPressMenu(item.route)}
                                 >
                                     {IconComponent && <IconComponent size={20} color="#fff" style={styles.menuIcon} />}
                                     <Text style={styles.menuText}>{item.label}</Text>
@@ -89,17 +95,17 @@ const SideMenu = ({ visible, onClose, onSelectOption }) => {
 export default SideMenu;
 
 const menuOptions = [
-    { key: 'Liked Posts', label: 'Liked Posts', icon: 'home' },
-    { key: 'Previous Posts', label: 'Previous Posts', icon: 'users' },
-    { key: 'Help & Support', label: 'Help & Support', icon: 'bar-chart-2' },
-    { key: 'Terms & Conditions', label: 'Terms & Conditions', icon: 'clock' },
-    { key: 'About Us', label: 'About Us', icon: 'user-plus' },
-    { key: 'Contact Us', label: 'Contact Us', icon: 'message-circle' },
+    // { key: 'Liked Posts', label: 'Liked Posts', icon: 'home' },
+    // { key: 'Previous Posts', label: 'Previous Posts', icon: 'users' },
+    { key: 'Help & Support', label: 'Help & Support', icon: 'bar-chart-2', route: 'Help' },
+    { key: 'Terms & Conditions', label: 'Terms & Conditions', icon: 'clock', route: 'Terms' },
+    // { key: 'About Us', label: 'About Us', icon: 'user-plus', route: 'About' },
+    { key: 'Contact Us', label: 'Contact Us', icon: 'message-circle', route: 'Contact' },
     // { key: 'Program', label: 'Approach Anxiety Program', icon: 'activity' },
     // { key: 'Leaderboard', label: 'Leaderboard', icon: 'award' },
-    { key: 'Settings', label: 'Settings', icon: 'settings' },
+    { key: 'Settings', label: 'Settings', icon: 'settings', route: 'Settings' },
     // { key: 'Help', label: 'Help', icon: 'help-circle' },
-    { key: 'Logout', label: 'Logout', icon: 'log-out' },
+    // { key: 'Logout', label: 'Logout', icon: 'log-out', route: 'Settings' },
 ];
 
 const styles = StyleSheet.create({

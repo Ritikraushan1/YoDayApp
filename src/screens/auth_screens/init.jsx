@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
@@ -9,9 +10,12 @@ const Init = ({ navigation }) => {
 
             // Example condition: hardcoded for now
             const isLoggedIn = false; // Change this to true to test
+            const res = await AsyncStorage.getItem('yodayuser');
+            console.log("res when opening app", res);
 
-            if (isLoggedIn) {
-                navigation.replace('UpdateProfile'); // Replace so user can't go back
+
+            if (res !== null || res !== undefined) {
+                navigation.replace('Posts'); // Replace so user can't go back
             } else {
                 navigation.replace('Login');
             }

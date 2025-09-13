@@ -9,20 +9,44 @@ import {
     ScrollView,
     Image,
 } from 'react-native';
-import { Icon, CheckBox } from '@rneui/themed';
 import CustomTextInput from '../../components/CustomTextInput';
+import {
+    UploadIcon,
+    PersonIcon,
+    CallIcon,
+    CalendarIcon,
+    TimeIcon,
+    LocationIcon,
+    RadioCheckedIcon,
+    RadioUncheckedIcon,
+} from '../../assets/icon/MenuIcons';
+import CustomDropDown from '../../components/CustomDropDown';
+import { UserService } from '../../api/UserService';
 
-const UpdateProfileScreen = ({ navigation }) => {
-    const [fullName, setFullName] = useState('Pradeep');
-    const [phone, setPhone] = useState('+91-9838959106');
+const UpdateProfileScreen = ({ navigation, route }) => {
+    const { id, token } = route.params;
+    const [fullName, setFullName] = useState('');
+    const [phone, setPhone] = useState('');
     const [email, setEmail] = useState('');
-    const [gender, setGender] = useState('Male');
-    const [dob, setDob] = useState('10-August-1989');
+    const [gender, setGender] = useState('');
+    const [dob, setDob] = useState('');
     const [tob, setTob] = useState('06:00 PM');
     const [pob, setPob] = useState('');
 
-    const handleSave = () => {
-        navigation.navigate("Posts");
+    const handleSave = async () => {
+        let body = {
+            name: fullName,
+            email: email,
+            gender: gender,
+            mobile_number: phone,
+            description: "This is ritik here"
+        }
+        const res = await UserService.updateUserProfile(body);
+        console.log("res after update profile", res);
+        if (res.status === 200) {
+            navigation.navigate("Posts");
+        }
+
     };
 
     return (
@@ -39,15 +63,15 @@ const UpdateProfileScreen = ({ navigation }) => {
                         style={styles.avatar}
                     />
                     <TouchableOpacity style={styles.uploadIcon}>
-                        <Icon name="upload" type="feather" size={16} color="#fff" />
+                        <UploadIcon size={16} color="#fff" />
                     </TouchableOpacity>
                 </View>
-                <Text style={styles.phoneText}>{phone}</Text>
+                <Text style={styles.phoneText}>{fullName}</Text>
 
                 {/* Name */}
                 <Text style={styles.label}>Name*</Text>
                 <CustomTextInput
-                    icon="person-outline"
+                    // icon="person-outline"
                     placeholder="Full Name"
                     value={fullName}
                     onChangeText={setFullName}
@@ -56,55 +80,40 @@ const UpdateProfileScreen = ({ navigation }) => {
                 {/* Mobile */}
                 <Text style={styles.label}>Mobile No.</Text>
                 <CustomTextInput
-                    icon="call-outline"
+                    // icon="call-outline"
                     placeholder="Mobile Number"
                     value={phone}
                     onChangeText={setPhone}
                     keyboardType="phone-pad"
                 />
 
-                {/* Gender */}
-                <Text style={styles.label}>Gender</Text>
-                <View style={styles.genderRow}>
-                    {['Male', 'Female', 'Others'].map((item) => (
-                        <CheckBox
-                            key={item}
-                            title={item}
-                            checkedIcon="dot-circle-o"
-                            uncheckedIcon="circle-o"
-                            checked={gender === item}
-                            onPress={() => setGender(item)}
-                            containerStyle={styles.genderCheck}
-                            textStyle={{ fontSize: 14, fontWeight: '500', color: '#fff' }}
-                        />
-                    ))}
-                </View>
+                <CustomDropDown
+                    label="Gender"
+                    placeholder="Select Gender"
+                    value={gender}
+                    dropDownItems={["Male", "Female", "Other"]}
+                    onSelect={setGender}
+                    error={!gender}
+                    errorMessage="Please select gender"
+                />
+                <CustomTextInput
+                    label="Email Address"
+                    // icon="mail-outline"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    error={!email}
+                    errorMessage="Email is required"
+                />
 
                 {/* DOB */}
                 <Text style={styles.label}>Date of Birth</Text>
                 <CustomTextInput
-                    icon="calendar-outline"
+                    // icon="calendar-outline"
                     placeholder="DD-MM-YYYY"
                     value={dob}
                     onChangeText={setDob}
-                />
-
-                {/* Time of Birth */}
-                <Text style={styles.label}>Time of Birth</Text>
-                <CustomTextInput
-                    icon="time-outline"
-                    placeholder="HH:MM"
-                    value={tob}
-                    onChangeText={setTob}
-                />
-
-                {/* Place of Birth */}
-                <Text style={styles.label}>Place of Birth</Text>
-                <CustomTextInput
-                    icon="location-outline"
-                    placeholder="City / Town"
-                    value={pob}
-                    onChangeText={setPob}
                 />
 
                 {/* Submit */}
@@ -123,10 +132,14 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         padding: 20,
+        // backgroundColor: '#fff'
     },
     avatarWrapper: {
         alignSelf: 'center',
         marginBottom: 10,
+        borderWidth: 1,
+        borderRadius: 50,
+        backgroundColor: '#fff'
     },
     avatar: {
         width: 100,

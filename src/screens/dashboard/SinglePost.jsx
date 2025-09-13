@@ -6,26 +6,25 @@ import {
     StyleSheet,
     Dimensions,
     ScrollView,
-    Platform,
-    PermissionsAndroid,
-    Alert
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../../components/Header";
 import CommentCard from "../../components/CommentCard";
-import AlertModal from "../../components/AlertModal";
 
 const { height } = Dimensions.get("window");
 
-const Posts = ({ navigation }) => {
+const SinglePosts = ({ navigation, route }) => {
     const [searchText, setSearchText] = useState("");
     const [likedPosts, setLikedPosts] = useState({});
     const [currentIndex, setCurrentIndex] = useState(0);
     const [showComments, setShowComments] = useState(false);
-    const [showModal, setShowModal] = useState(false);
     const [comments, setComments] = useState([
         { id: "c1", author: "Alice", text: "Nice post!", replies: [] },
         { id: "c2", author: "Bob", text: "I agree with you", replies: [] },
     ]);
+
+    const { post } = route.params;
+
 
     const posts = [
         { id: "1", content: "I had a nice day" },
@@ -66,51 +65,6 @@ const Posts = ({ navigation }) => {
         );
     };
 
-    const handleAttach = async (commentId) => {
-        try {
-            if (Platform.OS === "android") {
-                let granted = await PermissionsAndroid.check(
-                    PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE
-                );
-
-                if (!granted) {
-                    granted = await PermissionsAndroid.request(
-                        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-                        {
-                            title: "Storage Permission",
-                            message: "App needs access to your photos to upload images.",
-                            buttonNeutral: "Ask Me Later",
-                            buttonNegative: "Cancel",
-                            buttonPositive: "OK",
-                        }
-                    );
-                }
-
-                if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-                    // Show explanation + option to retry
-                    Alert.alert(
-                        "Permission Required",
-                        "Storage access is required to upload images. Please allow permission.",
-                        [
-                            {
-                                text: "Try Again",
-                                onPress: () => handleAttach(commentId), // 🔄 ask again
-                            },
-                            { text: "Cancel", style: "cancel" },
-                        ]
-                    );
-                    return;
-                }
-            }
-
-            // ✅ Open image picker here
-            console.log("Permission granted, open picker...");
-
-        } catch (err) {
-            console.warn(err);
-        }
-    };
-
     const handleReact = (id) => {
         console.log("Reacted on comment:", id);
     };
@@ -118,8 +72,8 @@ const Posts = ({ navigation }) => {
         navigation.navigate("SearchPosts")
     }
 
-    const currentPost = posts[currentIndex];
-    const answer = likedPosts[currentPost.id];
+    const currentPost = post;
+    const answer = likedPosts[post.id];
 
     return (
         <View style={{ flex: 1, backgroundColor: "transparent", height: '100%' }} >
@@ -149,7 +103,7 @@ const Posts = ({ navigation }) => {
 
                             <Pressable
                                 style={[styles.choiceButton, answer === "no" && styles.selectedNo]}
-                                onPress={() => setShowModal(true)}
+                                onPress={() => handleAnswer(currentPost.id, "no")}
                             >
                                 <Text style={[styles.choiceText, answer === "no" && styles.choiceTextSelected]}>No</Text>
                             </Pressable>
@@ -161,13 +115,6 @@ const Posts = ({ navigation }) => {
                             </Pressable>
                         )}
                     </View>
-
-                    <Pressable
-                        style={({ pressed }) => [styles.bottomButton, pressed && styles.buttonPressed]}
-                        onPress={handlePreviousPost}
-                    >
-                        <Text style={styles.bottomButtonText}>Previous posts</Text>
-                    </Pressable>
                 </View>
             ) : (
                 // When comments are shown → scrollable layout with comments
@@ -207,23 +154,11 @@ const Posts = ({ navigation }) => {
                                 onLike={handleLike}
                                 onReply={handleReply}
                                 onReact={handleReact}
-                                onAttach={handleAttach}
                             />
                         ))}
                     </View>
                 </ScrollView>
             )}
-            <AlertModal
-                visible={showModal}
-                onClose={() => setShowModal(false)}
-                alertText="Are you sure you want to delete this post?"
-                showCancel={true}
-                showOk={true}
-                cancelText="No"
-                okText="Yes"
-                onCancel={() => setShowModal(false)}
-                onOk={() => setShowModal(false)}
-            />
         </View>
     );
 };
@@ -298,4 +233,4 @@ const styles = StyleSheet.create({
     commentSection: { marginTop: 10, paddingHorizontal: 12 },
 });
 
-export default Posts;
+export default SinglePosts;

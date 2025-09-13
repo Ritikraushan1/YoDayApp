@@ -12,7 +12,7 @@ import {
 import PostCard from "../../components/PostCard";
 import { BackIcon } from "../../assets/icon/MenuIcons";
 
-const SearchPostsScreen = ({ navigation }) => {
+const PostList = ({ navigation, route }) => {
     const [query, setQuery] = useState("");
     const [loading, setLoading] = useState(false);
     const [results, setResults] = useState([]);
@@ -59,14 +59,9 @@ const SearchPostsScreen = ({ navigation }) => {
                 <Pressable onPress={() => navigation.goBack()}>
                     <BackIcon />
                 </Pressable>
-                <TextInput
-                    style={styles.searchInput}
-                    placeholder="Search posts..."
-                    value={query}
-                    onChangeText={setQuery}
-                    onSubmitEditing={handleSearch}
-                    returnKeyType="search"
-                />
+                <Text>
+                    Liked Posts
+                </Text>
             </View>
 
             {/* Results */}
@@ -125,4 +120,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default SearchPostsScreen;
+export default PostList;

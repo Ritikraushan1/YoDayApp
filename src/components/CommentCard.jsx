@@ -1,8 +1,15 @@
 // components/CommentCard.js
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Pressable, TextInput } from "react-native";
+import {
+    View,
+    Text,
+    StyleSheet,
+    Pressable,
+    TextInput,
+    TouchableOpacity,
+} from "react-native";
 
-const CommentCard = ({ comment, onLike, onReply, onReact }) => {
+const CommentCard = ({ comment, onLike, onReply, onReact, onAttach }) => {
     const [showReplyInput, setShowReplyInput] = useState(false);
     const [replyText, setReplyText] = useState("");
 
@@ -35,12 +42,23 @@ const CommentCard = ({ comment, onLike, onReply, onReact }) => {
             {/* Reply input */}
             {showReplyInput && (
                 <View style={styles.replyBox}>
+                    {/* Attach button */}
+                    <TouchableOpacity
+                        style={styles.attachBtn}
+                        onPress={() => onAttach && onAttach(comment.id)}
+                    >
+                        <Text style={styles.attachText}>＋</Text>
+                    </TouchableOpacity>
+
+                    {/* Input */}
                     <TextInput
                         style={styles.input}
                         placeholder="Write a reply..."
                         value={replyText}
                         onChangeText={setReplyText}
                     />
+
+                    {/* Send button */}
                     <Pressable style={styles.sendBtn} onPress={handleReply}>
                         <Text style={styles.sendText}>Send</Text>
                     </Pressable>
@@ -57,6 +75,7 @@ const CommentCard = ({ comment, onLike, onReply, onReact }) => {
                             onLike={onLike}
                             onReply={onReply}
                             onReact={onReact}
+                            onAttach={onAttach}
                         />
                     ))}
                 </View>
@@ -103,6 +122,19 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         marginTop: 8,
+    },
+    attachBtn: {
+        marginRight: 8,
+        backgroundColor: "#f1f1f1",
+        borderRadius: 8,
+        padding: 8,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    attachText: {
+        fontSize: 18,
+        fontWeight: "bold",
+        color: "#007BFF",
     },
     input: {
         flex: 1,

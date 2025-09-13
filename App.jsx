@@ -2,6 +2,8 @@ import { StatusBar, StyleSheet, useColorScheme } from 'react-native';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AppNavigator from './src/navigation/AppNavigator';
+import { Provider } from 'react-redux';
+import { store } from './src/redux/store';
 
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
@@ -22,8 +24,9 @@ function App() {
       <SafeAreaProvider>
         {/* Make sure status bar text is visible */}
         <SafeAreaView style={{ flex: 1, backgroundColor: '#4267B2' }} edges={['top', 'bottom']}>
-
-          <AppNavigator />
+          <Provider store={store}>
+            <AppNavigator />
+          </Provider>
         </SafeAreaView>
       </SafeAreaProvider>
     </NavigationContainer >
