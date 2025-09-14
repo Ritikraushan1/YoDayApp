@@ -2,52 +2,11 @@ import axios from "axios";
 import { Alert, Platform } from 'react-native';
 import Config from 'react-native-config';
 import * as YDAPI from '../constants/apiConstants';
-import * as Keychain from 'react-native-keychain';
+import { UserService } from "./UserService";
 
-async function getUserInformation() {
-    try {
-        let creddentials_obj;
-        const credentials = await Keychain.getGenericPassword();
-        if (credentials.password !== undefined)
-            creddentials_obj = JSON.parse(credentials.password);
-        if (creddentials_obj !== undefined && creddentials_obj !== null)
-            return creddentials_obj;
-    } catch (error) {
-        console.log(error);
-    }
-}
-
-export const saveUserSession = async (id, token, profile) => {
-    try {
-
-        // If not, fetch the existing session and reuse its token
-        if (!token) {
-            const existingSession = await getUserInformation();
-            token = existingSession?.token || null;
-        }
-
-        const dataToStore = {
-            id: id,
-            token,
-            profile: profile,
-        };
-
-        await Keychain.setGenericPassword(
-            "usersession",
-            JSON.stringify(dataToStore)
-        );
-
-        return true;
-    } catch (error) {
-        console.error("Error saving user session:", error);
-        return false;
-    }
-};
-
-async function updateUserProfile(data) {
-    let url = Config.API_URL + YDAPI.PROFILE_SELF;
-    console.log("url and data in update", url, data);
-    const user = await getUserInformation();
+async function getAllTickets() {
+    let url = Config.API_URL + YDAPI.GET_MY_TICKETS;
+    const user = await UserService.getUserInformation();
     let tokenval = user?.token;
     console.log("detailsinuserinfo", user);
     let headers = {
@@ -55,12 +14,11 @@ async function updateUserProfile(data) {
     }
     return new Promise((resolve, reject) => {
         axios
-            .put(url, data, { headers: headers })
+            .get(url, { headers: headers })
             .then(response => {
                 let result = '';
                 console.log(response.status, response.data);
                 switch (response.status) {
-                    case 201:
                     case 200:
                         result = {
                             status: response.status,
@@ -97,24 +55,24 @@ async function updateUserProfile(data) {
     });
 }
 
-async function deleteUserProfile(data) {
-    let url = Config.API_URL + YDAPI.PROFILE_SELF;
-    console.log("url and data in update", url, data);
-
-    const user = await getUserInformation();
+async function addNewTickets(title, content) {
+    let url = Config.API_URL + YDAPI.ADD_TICKETS;
+    const user = await UserService.getUserInformation();
     let tokenval = user?.token;
-    console.log("detailsinuserinfo", user);
     let headers = {
         Authorization: `Bearer ${tokenval}`
     }
+    let body_obj = {
+        title,
+        content
+    }
     return new Promise((resolve, reject) => {
         axios
-            .delete(url, { headers: headers })
+            .post(url, body_obj, { headers: headers })
             .then(response => {
                 let result = '';
                 console.log(response.status, response.data);
                 switch (response.status) {
-                    case 201:
                     case 200:
                         result = {
                             status: response.status,
@@ -151,8 +109,7 @@ async function deleteUserProfile(data) {
     });
 }
 
-export const UserService = {
-    updateUserProfile,
-    deleteUserProfile,
-    getUserInformation
+export const TicketService = {
+    getAllTickets,
+    addNewTickets
 }

@@ -13,11 +13,17 @@ import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthService } from '../../api/AuthService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useDispatch } from 'react-redux';
+import { setUserInfo } from '../../redux/slices/userSlice';
+import * as Keychain from 'react-native-keychain';
+import { saveUserSession } from '../../api/UserService';
+
 
 const { width } = Dimensions.get("window");
 
 const SubmitOtpScreen = ({ navigation, route }) => {
     const { country_code, mobile, transaction_id, new_registration } = route.params;
+    const dispatch = useDispatch()
 
     const [otp, setOtp] = useState(["", "", "", "", "", ""]);
     const inputs = useRef([]);
@@ -58,7 +64,7 @@ const SubmitOtpScreen = ({ navigation, route }) => {
             id: res.data.id,
             token: res.data.token
         }
-        await AsyncStorage.setItem("yodayuser", dataToStore)
+        await AsyncStorage.setItem("yodayuser", JSON.stringify(dataToStore))
         if (res.data.update_profile) {
 
             navigation.navigate("UpdateProfile", {
@@ -66,6 +72,9 @@ const SubmitOtpScreen = ({ navigation, route }) => {
                 token: res.data.token
             }); // Example: navigate after successful OTP
         } else {
+            saveUserSession(dataToStore.id, dataToStore.token, res?.data?.profile)
+            dispatch(setUserInfo(res?.data?.profile));
+
             navigation.navigate("Posts")
         }
     };

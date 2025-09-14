@@ -2,13 +2,13 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- For images/photos -->
-<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
 
-<!-- For videos -->
-<uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <!-- For videos -->
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
 
-<!-- For audio -->
-<uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <!-- For audio -->
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
 
 
     <application

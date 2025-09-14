@@ -10,6 +10,7 @@ import {
     Image,
 } from 'react-native';
 import CustomTextInput from '../../components/CustomTextInput';
+import { useDispatch } from 'react-redux';
 import {
     UploadIcon,
     PersonIcon,
@@ -21,15 +22,18 @@ import {
     RadioUncheckedIcon,
 } from '../../assets/icon/MenuIcons';
 import CustomDropDown from '../../components/CustomDropDown';
-import { UserService } from '../../api/UserService';
+import { saveUserSession, UserService } from '../../api/UserService';
+import { setUserInfo } from '../../redux/slices/userSlice';
+import * as Keychain from 'react-native-keychain';
+
 
 const UpdateProfileScreen = ({ navigation, route }) => {
-    const { id, token } = route.params;
+    const dispatch = useDispatch();
     const [fullName, setFullName] = useState('');
     const [phone, setPhone] = useState('');
     const [email, setEmail] = useState('');
     const [gender, setGender] = useState('');
-    const [dob, setDob] = useState('');
+    const [description, setDescription] = useState('');
     const [tob, setTob] = useState('06:00 PM');
     const [pob, setPob] = useState('');
 
@@ -39,11 +43,13 @@ const UpdateProfileScreen = ({ navigation, route }) => {
             email: email,
             gender: gender,
             mobile_number: phone,
-            description: "This is ritik here"
+            description: description
         }
         const res = await UserService.updateUserProfile(body);
         console.log("res after update profile", res);
         if (res.status === 200) {
+            saveUserSession(res.data.id, null, res?.data?.profile);
+            dispatch(setUserInfo(res.data?.profile));
             navigation.navigate("Posts");
         }
 
@@ -51,10 +57,10 @@ const UpdateProfileScreen = ({ navigation, route }) => {
 
     return (
         <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={styles.container}
         >
-            <ScrollView contentContainerStyle={styles.scrollContent}>
+            <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
 
                 {/* Profile Avatar */}
                 <View style={styles.avatarWrapper}>
@@ -108,12 +114,12 @@ const UpdateProfileScreen = ({ navigation, route }) => {
                 />
 
                 {/* DOB */}
-                <Text style={styles.label}>Date of Birth</Text>
+                <Text style={styles.label}>Description</Text>
                 <CustomTextInput
                     // icon="calendar-outline"
-                    placeholder="DD-MM-YYYY"
-                    value={dob}
-                    onChangeText={setDob}
+                    placeholder="About You"
+                    value={description}
+                    onChangeText={setDescription}
                 />
 
                 {/* Submit */}

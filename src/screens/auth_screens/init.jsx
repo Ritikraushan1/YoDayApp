@@ -14,7 +14,7 @@ const Init = ({ navigation }) => {
             console.log("res when opening app", res);
 
 
-            if (res !== null || res !== undefined) {
+            if (res) {
                 navigation.replace('Posts'); // Replace so user can't go back
             } else {
                 navigation.replace('Login');

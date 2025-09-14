@@ -1,4 +1,3 @@
-// components/CommentCard.js
 import React, { useState } from "react";
 import {
     View,
@@ -8,79 +7,130 @@ import {
     TextInput,
     TouchableOpacity,
 } from "react-native";
+import CommentActionSheet from "./CommentActionsSheet";
+import Clipboard from "@react-native-clipboard/clipboard";
+import ReportModal from "./ReportModal";
+import { CommentsService } from "../api/CommentService";
 
 const CommentCard = ({ comment, onLike, onReply, onReact, onAttach }) => {
     const [showReplyInput, setShowReplyInput] = useState(false);
+    const [showReplies, setShowReplies] = useState(false);
     const [replyText, setReplyText] = useState("");
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [showActionSheet, setShowActionSheet] = useState(false);
 
     const handleReply = () => {
         if (replyText.trim()) {
-            onReply(comment.id, replyText);
+            onReply(comment.comment_id, replyText);
             setReplyText("");
             setShowReplyInput(false);
+            setShowReplies(true); // show replies after submitting one
+        }
+    };
+
+    const handleReport = () => {
+        setShowActionSheet(false);
+        setShowReportModal(true);
+    };
+
+    const submitReport = async (data) => {
+        console.log("Report submitted:", data);
+        const res = await CommentsService.addNewReportComments(data.commentId, data.reason, data?.reason, data?.details, data?.post_code);
+        console.log("res after reporting", res);
+
+        // Call API with data.commentId, data.reason, data.details
+    };
+    const handleCopy = () => {
+        Clipboard.setString(comment.text);
+    }
+
+    const toggleReply = () => {
+        // toggle reply input + replies visibility
+        const newState = !showReplyInput;
+        setShowReplyInput(newState);
+        if (!newState) {
+            setShowReplies(false);
         }
     };
 
     return (
-        <View style={styles.card}>
-            <Text style={styles.author}>{comment.author}</Text>
-            <Text style={styles.text}>{comment.text}</Text>
+        <Pressable onLongPress={() => setShowActionSheet(true)} // 👈 open action sheet on long press
+            delayLongPress={300}>
+            <View style={styles.card}>
+                <Text style={styles.author}>{comment.username}</Text>
+                <Text style={styles.text}>{comment.text}</Text>
 
-            {/* Action buttons */}
-            <View style={styles.actions}>
-                <Pressable onPress={() => onLike(comment.id)}>
-                    <Text style={styles.actionBtn}>👍 Like</Text>
-                </Pressable>
-                <Pressable onPress={() => setShowReplyInput(!showReplyInput)}>
-                    <Text style={styles.actionBtn}>💬 Reply</Text>
-                </Pressable>
-                <Pressable onPress={() => onReact(comment.id)}>
-                    <Text style={styles.actionBtn}>😀 React</Text>
-                </Pressable>
-            </View>
+                {/* Action buttons */}
+                <View style={styles.actions}>
+                    <Pressable onPress={() => onLike(comment.comment_id)}>
+                        <Text style={styles.actionBtn}>
+                            Like {comment?.likes > 0 && comment?.likes}
+                        </Text>
+                    </Pressable>
 
-            {/* Reply input */}
-            {showReplyInput && (
-                <View style={styles.replyBox}>
-                    {/* Attach button */}
-                    <TouchableOpacity
-                        style={styles.attachBtn}
-                        onPress={() => onAttach && onAttach(comment.id)}
-                    >
-                        <Text style={styles.attachText}>＋</Text>
-                    </TouchableOpacity>
-
-                    {/* Input */}
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Write a reply..."
-                        value={replyText}
-                        onChangeText={setReplyText}
-                    />
-
-                    {/* Send button */}
-                    <Pressable style={styles.sendBtn} onPress={handleReply}>
-                        <Text style={styles.sendText}>Send</Text>
+                    <Pressable onPress={toggleReply}>
+                        <Text style={styles.actionBtn}>
+                            {showReplyInput ? "Hide Reply" : "Reply"}
+                        </Text>
                     </Pressable>
                 </View>
-            )}
 
-            {/* Nested replies */}
-            {comment.replies?.length > 0 && (
-                <View style={styles.replies}>
-                    {comment.replies.map((reply) => (
-                        <CommentCard
-                            key={reply.id}
-                            comment={reply}
-                            onLike={onLike}
-                            onReply={onReply}
-                            onReact={onReact}
-                            onAttach={onAttach}
+                {/* Reply input */}
+                {showReplyInput && (
+                    <View style={styles.replyBox}>
+                        {/* Attach button */}
+                        <TouchableOpacity
+                            style={styles.attachBtn}
+                            onPress={() => onAttach && onAttach(comment.id)}
+                        >
+                            <Text style={styles.attachText}>＋</Text>
+                        </TouchableOpacity>
+
+                        {/* Input */}
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Write a reply..."
+                            value={replyText}
+                            onChangeText={setReplyText}
                         />
-                    ))}
-                </View>
-            )}
-        </View>
+
+                        {/* Send button */}
+                        <Pressable style={styles.sendBtn} onPress={handleReply}>
+                            <Text style={styles.sendText}>Send</Text>
+                        </Pressable>
+                    </View>
+                )}
+
+                {/* Nested replies (only when requested) */}
+                {/* Nested replies (always show if they exist) */}
+                {comment.replies?.length > 0 && (
+                    <View style={styles.replies}>
+                        {comment.replies.map((reply) => (
+                            <CommentCard
+                                key={reply.comment_id}
+                                comment={reply}
+                                onLike={onLike}
+                                onReply={onReply}
+                                onReact={onReact}
+                                onAttach={onAttach}
+                            />
+                        ))}
+                    </View>
+                )}
+            </View>
+            <CommentActionSheet
+                visible={showActionSheet}
+                onClose={() => setShowActionSheet(false)}
+                onReport={handleReport}
+                onCopy={handleCopy}
+            />
+            <ReportModal
+                visible={showReportModal}
+                onClose={() => setShowReportModal(false)}
+                onSubmit={submitReport}
+                comment={comment}
+            />
+        </Pressable>
     );
 };
 

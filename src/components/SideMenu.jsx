@@ -15,6 +15,7 @@ import DeviceInfo from 'react-native-device-info';
 import { IconMap } from '../assets/icon/MenuIcons';
 import { useNavigation } from '@react-navigation/native';
 import AlertModal from './AlertModal';
+import { useSelector } from 'react-redux';
 
 const version = DeviceInfo.getVersion();
 const buildNumber = DeviceInfo.getBuildNumber();
@@ -22,6 +23,7 @@ const buildNumber = DeviceInfo.getBuildNumber();
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const SideMenu = ({ visible, onClose, onSelectOption }) => {
+    const user = useSelector(state => state.user.userInfo);
     const navigation = useNavigation()
     const drawerAnim = useRef(new Animated.Value(-screenWidth)).current;
 
@@ -55,15 +57,24 @@ const SideMenu = ({ visible, onClose, onSelectOption }) => {
 
                     {/* 🔹 Profile Section */}
                     <View style={styles.profileSection}>
-                        <Image
-                            source={{ uri: 'https://randomuser.me/api/portraits/women/44.jpg' }}
-                            style={styles.profileImage}
-                        />
+                        {user?.avatar ? (
+                            <Image
+                                source={{ uri: user.avatar }}
+                                style={styles.profileImage}
+                            />
+                        ) : (
+                            <View style={styles.avatarFallback}>
+                                <Text style={styles.initials}>
+                                    {user?.name ? user.name.slice(0, 2).toUpperCase() : "NA"}
+                                </Text>
+                            </View>
+                        )}
                         <View>
-                            <Text style={styles.profileName}>John Doe</Text>
-                            <Text style={styles.profileLocation}>Berlin, Germany</Text>
+                            <Text style={styles.profileName}>{user?.name}</Text>
+                            <Text style={styles.profileLocation}>{user?.description}</Text>
                         </View>
                     </View>
+
 
                     {/* 🔹 Menu Items */}
                     <View style={styles.menu}>
@@ -181,4 +192,29 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#888',
     },
+    profileImage: {
+        width: 55,
+        height: 55,
+        borderRadius: 30,
+        marginRight: 12,
+        borderWidth: 2,
+        borderColor: "#fff",
+    },
+    avatarFallback: {
+        width: 55,
+        height: 55,
+        borderRadius: 30,
+        backgroundColor: "#fff",
+        alignItems: "center",
+        justifyContent: "center",
+        marginRight: 12,
+        borderWidth: 2,
+        borderColor: "#fff",
+    },
+    initials: {
+        fontWeight: "bold",
+        fontSize: 18,
+        color: "#4267B2",
+    },
+
 });
