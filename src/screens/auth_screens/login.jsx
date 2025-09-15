@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     View,
     Text,
@@ -17,63 +17,80 @@ import { AuthService } from '../../api/AuthService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useDispatch } from 'react-redux';
 import { setUserInfo } from '../../redux/slices/userSlice';
+import DesignedLoader from '../../components/DesignedLoader';
+import AlertModal from '../../components/AlertModal';
 
 const { width } = Dimensions.get("window");
 
 const LoginScreen = ({ navigation }) => {
     const dispatch = useDispatch();
+    const [loading, setIsLoading] = useState(false);
+    const [loaderText, setLoaderText] = useState('');
+    const [customAlert, setCustomAlert] = useState({
+        visible: false,
+        message: "",
+        showCancel: false,
+        onOk: null,
+        onCancel: null,
+    });
     const handleFacebookSignIn = async () => {
         try {
-            // Trigger Facebook login
             const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
 
             if (result.isCancelled) {
-                console.log("Facebook login cancelled");
+                setCustomAlert({
+                    visible: true,
+                    message: "You cancelled Facebook login. Do you want to try again?",
+                    showCancel: true,
+                    onOk: () => handleFacebookSignIn(), // retry login
+                    onCancel: () => console.log("User chose not to retry"),
+                });
                 return;
             }
 
-            // Get Access Token
             const data = await AccessToken.getCurrentAccessToken();
 
             if (!data) {
-                console.log("Failed to get access token");
+                setCustomAlert({
+                    visible: true,
+                    message: "Failed to get access token. Please try again.",
+                    showCancel: false,
+                    onOk: () => handleFacebookSignIn(),
+                });
                 return;
             }
-
-            console.log("Facebook Access Token:", data.accessToken.toString());
-
+            setIsLoading(true);
+            setLoaderText('Logging in with facebook...')
             const res = await AuthService.loginWithFacebook(data.accessToken.toString());
-            console.log("res after logging from facebook", res);
             if (res.status === 200) {
-
                 saveUserSession(res.data.id, res.data.token, res.data.profile);
                 const expiry = Date.now() + 5 * 24 * 60 * 60 * 1000;
                 const dataToStore = {
                     id: res.data.id,
                     token: res.data.token,
                     expiry
-                }
+                };
                 await AsyncStorage.setItem("yodayuser", JSON.stringify(dataToStore));
                 dispatch(setUserInfo(res?.data?.profile));
 
                 navigation.navigate("Posts");
             }
-
-
-            // You can send this token to your backend or directly fetch user profile
-            // Example: fetch user profile
-            // const response = await fetch(`https://graph.facebook.com/me?access_token=${data.accessToken}&fields=id,name,email`);
-            // const userInfo = await response.json();
-            // console.log("Facebook User Info:", userInfo);
-
-            // Navigate to Posts screen
-            // navigation.navigate("Posts");
-
         } catch (error) {
             console.error("Facebook login error:", error);
-            Alert.alert("Login Error", "Unable to login with Facebook. Please try again.");
+            setIsLoading(false);
+            setLoaderText('')
+            setCustomAlert({
+                visible: true,
+                message: "Unable to login with Facebook. Please try again.",
+                showCancel: true,
+                onOk: () => handleFacebookSignIn(),
+            });
+        } finally {
+            setIsLoading(false);
+            setLoaderText('')
         }
     };
+
 
 
     const handlePhoneLogin = () => {
@@ -133,6 +150,24 @@ const LoginScreen = ({ navigation }) => {
                         </Text>
                     </TouchableOpacity> */}
                 </View>
+                <DesignedLoader visible={loading} text={loaderText} />
+                <AlertModal
+                    visible={customAlert.visible}
+                    alertText={customAlert.message}
+                    showCancel={customAlert.showCancel}
+                    showOk={true}
+                    onOk={() => {
+                        if (customAlert.onOk) customAlert.onOk();
+                        setCustomAlert(prev => ({ ...prev, visible: false }));
+                    }}
+                    onCancel={() => {
+                        if (customAlert.onCancel) customAlert.onCancel();
+                        setCustomAlert(prev => ({ ...prev, visible: false }));
+                    }}
+                    okText="Retry"
+                    cancelText="Cancel"
+                />
+
             </LinearGradient>
         </SafeAreaView>
     );
