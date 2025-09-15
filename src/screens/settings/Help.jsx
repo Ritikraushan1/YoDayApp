@@ -128,8 +128,8 @@ const Help = ({ navigation }) => {
 
                             {/* Contact info */}
                             <Text style={styles.contactText}>
-                                You can contact us on this number{" "}
-                                <Text style={styles.phone}>1234567892</Text>
+                                You can reach to us via mail{" "}
+                                <Text style={styles.phone}>support@yoday.app</Text>
                             </Text>
                         </>
                     )}

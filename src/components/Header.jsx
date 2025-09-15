@@ -60,7 +60,7 @@ const Header = ({ username = '', avatar = null, searchText = '', onChangeSearch,
                 </TouchableOpacity>
 
                 {/* Username */}
-                <Text style={styles.username}>{username}</Text>
+                <Text style={styles.username}>YoDay</Text>
 
                 <View style={{ flex: 1 }} />
 

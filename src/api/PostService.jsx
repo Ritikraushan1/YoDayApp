@@ -55,8 +55,8 @@ async function getAllPosts() {
     });
 }
 
-async function getPostById(post_code) {
-    let url = Config.API_URL + YDAPI.GET_ALL_POSTS;
+async function getPostBySearchQuery(query) {
+    let url = Config.API_URL + YDAPI.GET_ALL_POSTS + '/search?query=' + query;
     const user = await UserService.getUserInformation();
     let tokenval = user?.token;
     console.log("detailsinuserinfo", user);
@@ -164,5 +164,6 @@ async function reactPost(postId, type) {
 
 export const PostService = {
     getAllPosts,
-    reactPost
+    reactPost,
+    getPostBySearchQuery
 }

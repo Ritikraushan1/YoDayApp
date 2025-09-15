@@ -55,7 +55,7 @@ async function getAllCommentsForPosts(postId) {
     });
 }
 
-async function addNewComments(post_code, text) {
+async function addNewComments(post_code, text, image = null) {
     let url = Config.API_URL + '/comments';
     const user = await UserService.getUserInformation();
     let tokenval = user?.token;
@@ -64,7 +64,8 @@ async function addNewComments(post_code, text) {
     }
     let body_obj = {
         post_code: post_code,
-        text: text
+        text: text,
+        imageUrl: image,
     }
     return new Promise((resolve, reject) => {
         axios
@@ -109,7 +110,7 @@ async function addNewComments(post_code, text) {
     });
 }
 
-async function addNewReplyToComments(post_code, text, commentId) {
+async function addNewReplyToComments(post_code, text, commentId, image) {
     let url = Config.API_URL + YDAPI.COMMENTS_REPLY;
     const user = await UserService.getUserInformation();
     let tokenval = user?.token;
@@ -119,6 +120,7 @@ async function addNewReplyToComments(post_code, text, commentId) {
     let body_obj = {
         post_code: post_code,
         text: text,
+        imageUrl: image,
         parentCommentId: commentId
     }
     return new Promise((resolve, reject) => {

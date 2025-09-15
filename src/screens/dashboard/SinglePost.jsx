@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     View,
     Text,
@@ -6,180 +6,310 @@ import {
     StyleSheet,
     Dimensions,
     ScrollView,
+    TextInput,
+    RefreshControl,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../../components/Header";
 import CommentCard from "../../components/CommentCard";
+import { useSelector } from "react-redux";
+import { PostService } from "../../api/PostService";
+import { CommentsService } from "../../api/CommentService";
+import CommentInput from "../../components/CommentInput";
 
 const { height } = Dimensions.get("window");
 
 const SinglePosts = ({ navigation, route }) => {
+    const user = useSelector(state => state.user.userInfo);
     const [searchText, setSearchText] = useState("");
-    const [likedPosts, setLikedPosts] = useState({});
-    const [currentIndex, setCurrentIndex] = useState(0);
+    const [comments, setComments] = useState([]);
+    const [newComment, setNewComment] = useState("");
     const [showComments, setShowComments] = useState(false);
-    const [comments, setComments] = useState([
-        { id: "c1", author: "Alice", text: "Nice post!", replies: [] },
-        { id: "c2", author: "Bob", text: "I agree with you", replies: [] },
-    ]);
+    const [refreshing, setRefreshing] = useState(false);
+    const [newCommentImage, setNewCommentImage] = useState(null);
 
     const { post } = route.params;
+    const [currentPost, setCurrentPost] = useState(post);
 
+    useEffect(() => {
+        getCommentsForPost();
+    }, [showComments]);
 
-    const posts = [
-        { id: "1", content: "I had a nice day" },
-        { id: "2", content: "Learning React Native is fun!" },
-        { id: "3", content: "Tomorrow I will travel to Delhi" },
-    ];
-
-    const handleAnswer = (id, answer) => {
-        setLikedPosts((prev) => ({
-            ...prev,
-            [id]: answer,
-        }));
-    };
-
-    const handlePreviousPost = () => {
-        if (currentIndex > 0) {
-            setCurrentIndex((prev) => prev - 1);
+    const getCommentsForPost = async () => {
+        try {
+            const res = await CommentsService.getAllCommentsForPosts(currentPost?.post_code);
+            setComments(res?.data?.comments || []);
+        } catch (err) {
+            console.error("Failed to load comments", err);
         }
     };
 
-    const handleLike = (id) => {
-        console.log("Liked comment:", id);
+    const handleSendComment = async (text, image) => {
+        if (!newComment.trim()) return;
+        console.log("new comment", newComment);
+        console.log("new comment image", newCommentImage);
+
+
+
+        try {
+            const res = await CommentsService.addNewComments(currentPost.post_code, text, image);
+            console.log("res after adding comments", res.data);
+
+            if (res?.status === 200) {
+                setComments((prev) => [
+                    ...prev,
+                    {
+                        id: Date.now().toString(),
+                        username: user.name,
+                        text: newComment,
+                        image: newCommentImage,
+                        replies: [],
+                    },
+                ]);
+                setNewComment(""); // clear input
+            }
+        } catch (err) {
+            console.error("Failed to post comment", err);
+        }
     };
 
-    const handleReply = (id, replyText) => {
-        setComments((prev) =>
-            prev.map((c) =>
-                c.id === id
-                    ? {
-                        ...c,
-                        replies: [
-                            ...c.replies,
-                            { id: Date.now().toString(), author: "You", text: replyText, replies: [] },
-                        ],
+
+    const handleAnswer = async (postCode, type) => {
+        try {
+            const res = await PostService.reactPost(postCode, type);
+            if (res.status === 200) {
+                setCurrentPost(prev => {
+                    if (!prev) return prev;
+                    let updatedPost = { ...prev };
+
+                    if (type === "like") {
+                        if (prev.liked_by_you) {
+                            updatedPost.liked_by_you = false;
+                            updatedPost.like_count = Math.max(0, prev.like_count - 1);
+                        } else {
+                            updatedPost.liked_by_you = true;
+                            updatedPost.like_count = prev.like_count + 1;
+                            if (prev.disliked_by_you) {
+                                updatedPost.disliked_by_you = false;
+                                updatedPost.dislike_count = Math.max(0, prev.dislike_count - 1);
+                            }
+                        }
+                    } else if (type === "dislike") {
+                        if (prev.disliked_by_you) {
+                            updatedPost.disliked_by_you = false;
+                            updatedPost.dislike_count = Math.max(0, prev.dislike_count - 1);
+                        } else {
+                            updatedPost.disliked_by_you = true;
+                            updatedPost.dislike_count = prev.dislike_count + 1;
+                            if (prev.liked_by_you) {
+                                updatedPost.liked_by_you = false;
+                                updatedPost.like_count = Math.max(0, prev.like_count - 1);
+                            }
+                        }
                     }
-                    : c
-            )
-        );
+                    return updatedPost;
+                });
+            }
+        } catch (error) {
+            console.error("Failed to react to post", error);
+        }
     };
 
-    const handleReact = (id) => {
-        console.log("Reacted on comment:", id);
-    };
-    const handleSearchClick = () => {
-        navigation.navigate("SearchPosts")
-    }
+    const formatPostDate = (dateString) => {
+        const postDate = new Date(dateString);
+        const today = new Date();
+        const yesterday = new Date();
+        yesterday.setDate(today.getDate() - 1);
 
-    const currentPost = post;
-    const answer = likedPosts[post.id];
+        const isToday =
+            postDate.getDate() === today.getDate() &&
+            postDate.getMonth() === today.getMonth() &&
+            postDate.getFullYear() === today.getFullYear();
+
+        const isYesterday =
+            postDate.getDate() === yesterday.getDate() &&
+            postDate.getMonth() === yesterday.getMonth() &&
+            postDate.getFullYear() === yesterday.getFullYear();
+
+        if (isToday) return "Today";
+        if (isYesterday) return "Yesterday";
+
+        const options = { day: "2-digit", month: "short" };
+        return postDate.toLocaleDateString("en-US", options);
+    };
+
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        try {
+            await getCommentsForPost();
+        } finally {
+            setRefreshing(false);
+        }
+    };
+
+    const answer = currentPost
+        ? currentPost.liked_by_you
+            ? "yes"
+            : currentPost.disliked_by_you
+                ? "no"
+                : null
+        : null;
 
     return (
-        <View style={{ flex: 1, backgroundColor: "transparent", height: '100%' }} >
+        <View style={{ flex: 1, backgroundColor: "transparent" }}>
             {/* Header */}
             <Header
-                username="John Doe"
-                avatar={null}
+                username={user?.name}
+                avatar={user?.avatar}
                 searchText={searchText}
                 onChangeSearch={(text) => setSearchText(text)}
-                onClickOnSearch={handleSearchClick}
+                onClickOnSearch={() => navigation.navigate("SearchPosts")}
             />
 
-            {/* Main Content */}
-            {!showComments ? (
-                // When comments are hidden → post takes full space
-                <View style={styles.fullPostScreen}>
-                    <Text style={styles.postText}>{currentPost.content}</Text>
-
-                    <View style={styles.centerArea}>
-                        <View style={styles.row}>
-                            <Pressable
-                                style={[styles.choiceButton, answer === "yes" && styles.selectedYes]}
-                                onPress={() => handleAnswer(currentPost.id, "yes")}
-                            >
-                                <Text style={[styles.choiceText, answer === "yes" && styles.choiceTextSelected]}>Yes</Text>
-                            </Pressable>
-
-                            <Pressable
-                                style={[styles.choiceButton, answer === "no" && styles.selectedNo]}
-                                onPress={() => handleAnswer(currentPost.id, "no")}
-                            >
-                                <Text style={[styles.choiceText, answer === "no" && styles.choiceTextSelected]}>No</Text>
-                            </Pressable>
+            <ScrollView
+                contentContainerStyle={{ flexGrow: 1, backgroundColor: 'white' }}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={handleRefresh}
+                        tintColor="#28a745"
+                        title="Refreshing..."
+                        titleColor="#28a745"
+                    />
+                }
+            >
+                {!showComments ? (
+                    <View style={styles.fullPostScreen}>
+                        <View style={styles.topRightContainer}>
+                            <Text style={styles.postDate}>
+                                {formatPostDate(currentPost?.created_at)}
+                            </Text>
                         </View>
 
-                        {answer === "yes" && (
-                            <Pressable style={styles.commentButton} onPress={() => setShowComments(true)}>
-                                <Text style={styles.commentText}>Comments</Text>
-                            </Pressable>
-                        )}
+                        <View style={styles.centerContent}>
+                            <Text style={styles.postText}>{currentPost?.content}</Text>
+
+                            <View style={styles.centerArea}>
+                                <View style={styles.row}>
+                                    <Pressable
+                                        style={[styles.choiceButton, answer === "yes" && styles.selectedYes]}
+                                        onPress={() => handleAnswer(currentPost?.post_code, "like")}
+                                    >
+                                        <View style={styles.choiceContent}>
+                                            <Text style={[styles.choiceText, answer === "yes" && styles.choiceTextSelected]}>
+                                                Yes
+                                            </Text>
+                                            <Text style={styles.countText}>{currentPost?.like_count}</Text>
+                                        </View>
+                                    </Pressable>
+
+                                    <Pressable
+                                        style={[styles.choiceButton, answer === "no" && styles.selectedNo]}
+                                        onPress={() => handleAnswer(currentPost?.post_code, "dislike")}
+                                    >
+                                        <View style={styles.choiceContent}>
+                                            <Text style={[styles.choiceText, answer === "no" && styles.choiceTextSelected]}>
+                                                No
+                                            </Text>
+                                            <Text style={styles.countText}>{currentPost?.dislike_count}</Text>
+                                        </View>
+                                    </Pressable>
+                                </View>
+
+                                {answer && (
+                                    <Pressable style={styles.commentButton} onPress={() => setShowComments(true)}>
+                                        <Text style={styles.commentText}>Comments</Text>
+                                    </Pressable>
+                                )}
+                            </View>
+                        </View>
                     </View>
-                </View>
-            ) : (
-                // When comments are shown → scrollable layout with comments
-                <ScrollView contentContainerStyle={{ paddingBottom: 30 }}>
-                    <View style={styles.postScreen}>
-                        <Text style={styles.postText}>{currentPost.content}</Text>
+                ) : (
+                    <ScrollView contentContainerStyle={{ paddingBottom: 30 }}>
+                        <View style={styles.postScreen}>
+                            <Text style={styles.postText}>{currentPost.content}</Text>
 
-                        <View style={styles.centerArea}>
-                            <View style={styles.row}>
-                                <Pressable
-                                    style={[styles.choiceButton, answer === "yes" && styles.selectedYes]}
-                                    onPress={() => handleAnswer(currentPost.id, "yes")}
-                                >
-                                    <Text style={[styles.choiceText, answer === "yes" && styles.choiceTextSelected]}>Yes</Text>
-                                </Pressable>
+                            <View style={styles.centerArea}>
+                                <View style={styles.row}>
+                                    <Pressable
+                                        style={[styles.choiceButton, answer === "yes" && styles.selectedYes]}
+                                        onPress={() => handleAnswer(currentPost.post_code, "like")}
+                                    >
+                                        <Text style={[styles.choiceText, answer === "yes" && styles.choiceTextSelected]}>
+                                            Yes
+                                        </Text>
+                                        <Text style={styles.countText}>{currentPost?.like_count}</Text>
+                                    </Pressable>
 
-                                <Pressable
-                                    style={[styles.choiceButton, answer === "no" && styles.selectedNo]}
-                                    onPress={() => handleAnswer(currentPost.id, "no")}
-                                >
-                                    <Text style={[styles.choiceText, answer === "no" && styles.choiceTextSelected]}>No</Text>
+                                    <Pressable
+                                        style={[styles.choiceButton, answer === "no" && styles.selectedNo]}
+                                        onPress={() => handleAnswer(currentPost.post_code, "dislike")}
+                                    >
+                                        <Text style={[styles.choiceText, answer === "no" && styles.choiceTextSelected]}>
+                                            No
+                                        </Text>
+                                        <Text style={styles.countText}>{currentPost?.dislike_count}</Text>
+                                    </Pressable>
+                                </View>
+
+                                <Pressable style={styles.commentButton} onPress={() => setShowComments(false)}>
+                                    <Text style={styles.commentText}>Hide Comments</Text>
                                 </Pressable>
                             </View>
-
-                            <Pressable style={styles.commentButton} onPress={() => setShowComments(false)}>
-                                <Text style={styles.commentText}>Hide Comments</Text>
-                            </Pressable>
                         </View>
-                    </View>
 
-                    {/* Comments Section */}
-                    <View style={styles.commentSection}>
-                        {comments.map((c) => (
-                            <CommentCard
-                                key={c.id}
-                                comment={c}
-                                onLike={handleLike}
-                                onReply={handleReply}
-                                onReact={handleReact}
+                        <View style={styles.commentSection}>
+                            {comments.length === 0 && (
+                                <Text style={styles.noCommentsText}>No comments yet. Be the first to comment!</Text>
+                            )}
+
+                            {comments.map((c) => (
+                                <CommentCard
+                                    key={c.comment_id}
+                                    comment={c}
+                                    onLike={() => console.log("like", c.comment_id)}
+                                    onReply={() => console.log("reply", c.comment_id)}
+                                    onReact={() => console.log("react", c.comment_id)}
+                                />
+                            ))}
+
+                            <CommentInput
+                                onSend={({ text, image }) => {
+                                    if (!text.trim()) return;
+                                    setNewComment(text);
+                                    setNewCommentImage(image);
+                                    handleSendComment(text, image);
+                                }}
                             />
-                        ))}
-                    </View>
-                </ScrollView>
-            )}
+                        </View>
+                    </ScrollView>
+                )}
+            </ScrollView>
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#F8F9FA" },
-
     fullPostScreen: {
         flex: 1,
         justifyContent: "space-between",
-        padding: 20,
         backgroundColor: "#fff",
         borderRadius: 28,
         margin: 12,
+        paddingHorizontal: 20,
+        paddingVertical: 10,
         shadowColor: "#000",
         shadowOpacity: 0.08,
         shadowRadius: 8,
         shadowOffset: { width: 0, height: 4 },
         elevation: 3,
+        position: "relative",
     },
-
+    centerContent: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        paddingHorizontal: 20,
+    },
     postScreen: {
         padding: 20,
         backgroundColor: "#fff",
@@ -191,7 +321,6 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 4 },
         elevation: 3,
     },
-
     postText: {
         fontSize: 22,
         fontWeight: "500",
@@ -199,7 +328,6 @@ const styles = StyleSheet.create({
         textAlign: "center",
         marginTop: 10,
     },
-
     centerArea: { alignItems: "center", marginTop: 15 },
     row: { flexDirection: "row", justifyContent: "center", gap: 40, marginVertical: 20 },
     choiceButton: {
@@ -210,6 +338,16 @@ const styles = StyleSheet.create({
         borderColor: "#ccc",
     },
     choiceText: { fontSize: 18, color: "#444" },
+    choiceContent: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+    },
+    countText: {
+        fontSize: 16,
+        fontWeight: "500",
+        color: "#333",
+    },
     selectedYes: { backgroundColor: "#d4edda", borderColor: "#28a745" },
     selectedNo: { backgroundColor: "#f8d7da", borderColor: "#dc3545" },
     choiceTextSelected: { fontWeight: "600" },
@@ -221,16 +359,42 @@ const styles = StyleSheet.create({
         marginTop: 10,
     },
     commentText: { fontSize: 16, fontWeight: "500", color: "#333" },
-    bottomButton: {
-        backgroundColor: "#E9ECEF",
-        paddingVertical: 14,
-        borderRadius: 12,
-        alignItems: "center",
-        marginTop: 20,
-    },
-    bottomButtonText: { fontSize: 16, fontWeight: "500", color: "#333" },
-    buttonPressed: { opacity: 0.7 },
     commentSection: { marginTop: 10, paddingHorizontal: 12 },
+    replyContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginTop: 10,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        backgroundColor: "#F1F3F5",
+        borderRadius: 12,
+    },
+    replyInput: {
+        flex: 1,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        backgroundColor: "#fff",
+        borderRadius: 8,
+        fontSize: 16,
+    },
+    sendIcon: { marginLeft: 8, padding: 6 },
+    noCommentsText: {
+        textAlign: "center",
+        color: "#888",
+        marginVertical: 10,
+        fontSize: 16,
+    },
+    postDate: {
+        fontSize: 14,
+        color: "#888",
+        fontWeight: "500",
+    },
+    topRightContainer: {
+        position: "absolute",
+        top: 20,
+        right: 30,
+        zIndex: 10,
+    },
 });
 
 export default SinglePosts;

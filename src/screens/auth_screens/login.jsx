@@ -10,14 +10,71 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FacebookIcon from '../../assets/icon/FacebookIcon';
-
+import PhoneIcon from '../../assets/icon/PhoneIcon';
+import { LoginManager, AccessToken } from 'react-native-fbsdk-next';
+import { saveUserSession, UserService } from '../../api/UserService';
+import { AuthService } from '../../api/AuthService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useDispatch } from 'react-redux';
+import { setUserInfo } from '../../redux/slices/userSlice';
 
 const { width } = Dimensions.get("window");
 
 const LoginScreen = ({ navigation }) => {
+    const dispatch = useDispatch();
     const handleFacebookSignIn = async () => {
-        navigation.navigate("Posts");
+        try {
+            // Trigger Facebook login
+            const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
+
+            if (result.isCancelled) {
+                console.log("Facebook login cancelled");
+                return;
+            }
+
+            // Get Access Token
+            const data = await AccessToken.getCurrentAccessToken();
+
+            if (!data) {
+                console.log("Failed to get access token");
+                return;
+            }
+
+            console.log("Facebook Access Token:", data.accessToken.toString());
+
+            const res = await AuthService.loginWithFacebook(data.accessToken.toString());
+            console.log("res after logging from facebook", res);
+            if (res.status === 200) {
+
+                saveUserSession(res.data.id, res.data.token, res.data.profile);
+                const expiry = Date.now() + 5 * 24 * 60 * 60 * 1000;
+                const dataToStore = {
+                    id: res.data.id,
+                    token: res.data.token,
+                    expiry
+                }
+                await AsyncStorage.setItem("yodayuser", JSON.stringify(dataToStore));
+                dispatch(setUserInfo(res?.data?.profile));
+
+                navigation.navigate("Posts");
+            }
+
+
+            // You can send this token to your backend or directly fetch user profile
+            // Example: fetch user profile
+            // const response = await fetch(`https://graph.facebook.com/me?access_token=${data.accessToken}&fields=id,name,email`);
+            // const userInfo = await response.json();
+            // console.log("Facebook User Info:", userInfo);
+
+            // Navigate to Posts screen
+            // navigation.navigate("Posts");
+
+        } catch (error) {
+            console.error("Facebook login error:", error);
+            Alert.alert("Login Error", "Unable to login with Facebook. Please try again.");
+        }
     };
+
 
     const handlePhoneLogin = () => {
         navigation.navigate("SubmitMobile");
@@ -41,20 +98,20 @@ const LoginScreen = ({ navigation }) => {
                     {/* Facebook Login Button */}
                     <View style={{ gap: 8 }}>
 
-                        {/* <TouchableOpacity
+                        <TouchableOpacity
                             style={styles.fbButton}
                             activeOpacity={0.85}
                             onPress={handleFacebookSignIn}
                         >
                             <FacebookIcon width={22} height={22} />
                             <Text style={styles.fbButtonText}>Continue with Facebook</Text>
-                        </TouchableOpacity> */}
+                        </TouchableOpacity>
                         <TouchableOpacity
                             style={styles.fbButton}
                             activeOpacity={0.85}
                             onPress={handlePhoneLogin}
                         >
-                            <FacebookIcon width={22} height={22} />
+                            <PhoneIcon />
                             <Text style={styles.fbButtonText}>Continue with Mobile Number</Text>
                         </TouchableOpacity>
                     </View>

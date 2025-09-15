@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">YoDay</string>
+
+    <string name="facebook_app_id">1119197316300883</string>
+    <string name="fb_login_protocol_scheme">fb1119197316300883</string>
+    <string name="facebook_client_token">4cce57503f6b5cebd060fb0b23ba5beb</string>
+
 </resources>

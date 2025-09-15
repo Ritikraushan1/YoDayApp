@@ -11,7 +11,8 @@ import {
     Alert,
     TextInput,
     BackHandler,
-    RefreshControl
+    RefreshControl,
+    KeyboardAvoidingView
 } from "react-native";
 import Header from "../../components/Header";
 import CommentCard from "../../components/CommentCard";
@@ -21,6 +22,11 @@ import { useSelector } from "react-redux";
 import { CommentsService } from "../../api/CommentService";
 import { useFocusEffect } from "@react-navigation/native";
 import DesignedLoader from "../../components/DesignedLoader";
+import { launchImageLibrary } from "react-native-image-picker";
+import { UploadService } from "../../api/UploadService";
+import { PERMISSIONS, RESULTS, request, check } from 'react-native-permissions';
+import CommentInput from "../../components/CommentInput";
+
 
 
 const { height } = Dimensions.get("window");
@@ -40,6 +46,7 @@ const Posts = ({ navigation }) => {
     const [likeCount, setLikeCount] = useState(0);
     const [dislikeCount, setDislikedCount] = useState(0);
     const [newComment, setNewComment] = useState("");
+    const [newCommentImage, setNewCommentImage] = useState(null);
     const [customAlert, setCustomAlert] = useState({
         visible: false,
         message: "",
@@ -156,11 +163,15 @@ const Posts = ({ navigation }) => {
     };
 
 
-    const handleSendComment = async () => {
+    const handleSendComment = async (text, image) => {
         if (!newComment.trim()) return;
+        console.log("new comment", newComment);
+        console.log("new comment image", newCommentImage);
+
+
 
         try {
-            const res = await CommentsService.addNewComments(currentPost.post_code, newComment);
+            const res = await CommentsService.addNewComments(currentPost.post_code, text, image);
             console.log("res after adding comments", res.data);
 
             if (res?.status === 200) {
@@ -170,6 +181,7 @@ const Posts = ({ navigation }) => {
                         id: Date.now().toString(),
                         username: user.name,
                         text: newComment,
+                        image: newCommentImage,
                         replies: [],
                     },
                 ]);
@@ -238,6 +250,7 @@ const Posts = ({ navigation }) => {
 
 
     const handlePreviousPost = () => {
+        navigation.navigate("PostList");
         if (currentIndex < posts.length - 1) {
 
             setCurrentIndex((prev) => prev + 1);
@@ -264,54 +277,49 @@ const Posts = ({ navigation }) => {
         await getCommentsForPost()
     };
 
-    const handleReply = async (id, replyText) => {
-        const res = await CommentsService.addNewReplyToComments(currentPost?.post_code, replyText, id);
+    const handleReply = async (id, replyText, image) => {
+        const res = await CommentsService.addNewReplyToComments(currentPost?.post_code, replyText, id, image);
         console.log("res after getting comments", res);
         await getCommentsForPost()
 
     };
 
-    const handleAttach = async (commentId) => {
+    const handleAttachCommentImage = async () => {
         try {
+            let permissionResult;
+
             if (Platform.OS === "android") {
-                let granted = await PermissionsAndroid.check(
-                    PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE
-                );
-
-                if (!granted) {
-                    granted = await PermissionsAndroid.request(
-                        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-                        {
-                            title: "Storage Permission",
-                            message: "App needs access to your photos to upload images.",
-                            buttonNeutral: "Ask Me Later",
-                            buttonNegative: "Cancel",
-                            buttonPositive: "OK",
-                        }
-                    );
+                permissionResult = await check(PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE);
+                if (permissionResult !== RESULTS.GRANTED) {
+                    permissionResult = await request(PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE);
+                    if (permissionResult !== RESULTS.GRANTED) return;
                 }
-
-                if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-                    setCustomAlert({
-                        visible: true,
-                        message: "Storage access is required to upload images. Please allow permission.",
-                        showCancel: true,
-                        onOk: () => handleAttach(commentId), // try again
-                        onCancel: () => setCustomAlert(prev => ({ ...prev, visible: false })),
-                    });
-                    return;
+            } else if (Platform.OS === "ios") {
+                permissionResult = await check(PERMISSIONS.IOS.PHOTO_LIBRARY);
+                if (permissionResult !== RESULTS.GRANTED) {
+                    permissionResult = await request(PERMISSIONS.IOS.PHOTO_LIBRARY);
+                    if (permissionResult !== RESULTS.GRANTED) return;
                 }
             }
 
-            // ✅ Open image picker here
-            console.log("Permission granted, open picker...");
-
+            // ✅ Open image picker
+            launchImageLibrary(
+                { mediaType: 'photo', maxWidth: 800, maxHeight: 800, quality: 0.8 },
+                async (response) => {
+                    if (response.didCancel) return;
+                    if (response.errorCode) {
+                        console.error("ImagePicker Error: ", response.errorMessage);
+                        return;
+                    }
+                    const image = response.assets[0];
+                    const url = await UploadService.uploadImageAndGetUrl(image);
+                    setNewCommentImage(url); // Save uploaded image URL
+                }
+            );
         } catch (err) {
             console.warn(err);
         }
     };
-
-
 
     const handleReact = (id) => {
         console.log("Reacted on comment:", id);
@@ -331,205 +339,200 @@ const Posts = ({ navigation }) => {
         : null;
 
     return (
-        <View style={{ flex: 1, backgroundColor: "transparent", height: '100%' }} >
-            {/* Header */}
-            <Header
-                username={user?.name}
-                avatar={user?.avatar}
-                searchText={searchText}
-                onChangeSearch={(text) => setSearchText(text)}
-                onClickOnSearch={handleSearchClick}
-            />
-            <DesignedLoader visible={isLoading} text="Loading posts..." />
-            <ScrollView
-                contentContainerStyle={{ flexGrow: 1 }}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={handleRefresh}
-                        tintColor="#28a745"
-                        title="Refreshing..."
-                        titleColor="#28a745"
-                    />
-                }
-            >
-                {/* Main Content */}
-                {!showComments ? (
-                    // When comments are hidden → post takes full space
-                    <View style={styles.fullPostScreen}>
-                        {/* Post Date at Top-Right */}
-                        <View style={styles.topRightContainer}>
-                            <Text style={styles.postDate}>{formatPostDate(currentPost?.created_at)}</Text>
+        <KeyboardAvoidingView style={{ flex: 1 }}
+            behavior={Platform.OS === "ios" ? "padding" : 'height'}>
+            <View style={{ flex: 1, backgroundColor: "transparent", height: '100%' }} >
+                {/* Header */}
+
+
+                <Header
+                    username={user?.name}
+                    avatar={user?.avatar}
+                    searchText={searchText}
+                    onChangeSearch={(text) => setSearchText(text)}
+                    onClickOnSearch={handleSearchClick}
+                />
+                <DesignedLoader visible={isLoading} text="Loading posts..." />
+                <ScrollView
+                    contentContainerStyle={{ flexGrow: 1, backgroundColor: 'white' }}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={handleRefresh}
+                            tintColor="#28a745"
+                            title="Refreshing..."
+                            titleColor="#28a745"
+                        />
+                    }
+                >
+                    {/* Main Content */}
+                    {!showComments ? (
+                        // When comments are hidden → post takes full space
+                        <View style={styles.fullPostScreen}>
+                            {/* Post Date at Top-Right */}
+                            <View style={styles.topRightContainer}>
+                                <Text style={styles.postDate}>{formatPostDate(currentPost?.created_at)}</Text>
+                            </View>
+
+                            {/* Main Content (Centered) */}
+                            <View style={styles.centerContent}>
+                                <Text style={styles.postText}>{currentPost?.content}</Text>
+
+                                <View style={styles.centerArea}>
+                                    <View style={styles.row}>
+                                        <Pressable
+                                            style={[styles.choiceButton, answer === "yes" && styles.selectedYes]}
+                                            onPress={() => handleAnswer(currentPost?.post_code, "like")}
+                                        >
+                                            <View style={styles.choiceContent}>
+                                                <Text style={[styles.choiceText, answer === "yes" && styles.choiceTextSelected]}>
+                                                    Yes
+                                                </Text>
+                                                {answer && <Text style={styles.countText}>{likeCount}</Text>}
+                                            </View>
+                                        </Pressable>
+
+                                        <Pressable
+                                            style={[styles.choiceButton, answer === "no" && styles.selectedNo]}
+                                            onPress={() => handleAnswer(currentPost?.post_code, "dislike")}
+                                        >
+                                            <View style={styles.choiceContent}>
+                                                <Text style={[styles.choiceText, answer === "no" && styles.choiceTextSelected]}>
+                                                    No
+                                                </Text>
+                                                {answer && <Text style={styles.countText}>{dislikeCount}</Text>}
+                                            </View>
+                                        </Pressable>
+                                    </View>
+
+                                    {answer && (
+                                        <Pressable style={styles.commentButton} onPress={() => setShowComments(true)}>
+                                            <Text style={styles.commentText}>Comments</Text>
+                                        </Pressable>
+                                    )}
+                                </View>
+                            </View>
+
+                            {/* Bottom Buttons */}
+                            {/* Bottom Button - Full Width */}
+                            <View style={{ paddingHorizontal: 12, marginTop: 20 }}>
+                                <Pressable
+                                    style={[
+                                        styles.bottomButton,
+                                        { width: '100%' }, // make it full width
+                                        currentIndex >= posts.length - 1 && styles.bottomButtonDisabled,
+                                    ]}
+                                    onPress={handlePreviousPost}
+                                    disabled={currentIndex >= posts.length - 1}
+                                >
+                                    <Text
+                                        style={[
+                                            styles.bottomButtonText,
+                                            currentIndex >= posts.length - 1 && styles.bottomButtonTextDisabled,
+                                        ]}
+                                    >
+                                        Previous posts
+                                    </Text>
+                                </Pressable>
+                            </View>
+
                         </View>
+                    ) : (
+                        // When comments are shown → scrollable layout with comments
+                        <ScrollView contentContainerStyle={{ paddingBottom: 30 }}>
+                            <View style={styles.postScreen}>
+                                <Text style={styles.postText}>{currentPost.content}</Text>
 
-                        {/* Main Content (Centered) */}
-                        <View style={styles.centerContent}>
-                            <Text style={styles.postText}>{currentPost?.content}</Text>
+                                <View style={styles.centerArea}>
+                                    <View style={styles.row}>
+                                        <Pressable
+                                            style={[styles.choiceButton, answer === "yes" && styles.selectedYes]}
+                                            onPress={() => handleAnswer(currentPost.post_code, "like")}
+                                        >
+                                            <Text style={[styles.choiceText, answer === "yes" && styles.choiceTextSelected]}>Yes</Text>
+                                            {answer && (
+                                                <Text style={styles.countText}>
+                                                    {likeCount}
+                                                </Text>
+                                            )}
+                                        </Pressable>
 
-                            <View style={styles.centerArea}>
-                                <View style={styles.row}>
-                                    <Pressable
-                                        style={[styles.choiceButton, answer === "yes" && styles.selectedYes]}
-                                        onPress={() => handleAnswer(currentPost?.post_code, "like")}
-                                    >
-                                        <View style={styles.choiceContent}>
-                                            <Text style={[styles.choiceText, answer === "yes" && styles.choiceTextSelected]}>
-                                                Yes
-                                            </Text>
-                                            {answer && <Text style={styles.countText}>{likeCount}</Text>}
-                                        </View>
-                                    </Pressable>
+                                        <Pressable
+                                            style={[styles.choiceButton, answer === "no" && styles.selectedNo]}
+                                            onPress={() => handleAnswer(currentPost.post_code, "dislike")}
+                                        >
+                                            <Text style={[styles.choiceText, answer === "no" && styles.choiceTextSelected]}>No</Text>
+                                            {answer && (
+                                                <Text style={styles.countText}>
+                                                    {dislikeCount}
+                                                </Text>
+                                            )}
+                                        </Pressable>
+                                    </View>
 
-                                    <Pressable
-                                        style={[styles.choiceButton, answer === "no" && styles.selectedNo]}
-                                        onPress={() => handleAnswer(currentPost?.post_code, "dislike")}
-                                    >
-                                        <View style={styles.choiceContent}>
-                                            <Text style={[styles.choiceText, answer === "no" && styles.choiceTextSelected]}>
-                                                No
-                                            </Text>
-                                            {answer && <Text style={styles.countText}>{dislikeCount}</Text>}
-                                        </View>
+                                    <Pressable style={styles.commentButton} onPress={() => {
+                                        setComments([]);
+                                        setShowComments(false)
+                                    }}>
+                                        <Text style={styles.commentText}>Hide Comments</Text>
                                     </Pressable>
                                 </View>
+                            </View>
 
-                                {answer && (
-                                    <Pressable style={styles.commentButton} onPress={() => setShowComments(true)}>
-                                        <Text style={styles.commentText}>Comments</Text>
-                                    </Pressable>
+                            {/* Comments Section */}
+                            <View style={styles.commentSection}>
+                                {/* Show placeholder if no comments */}
+                                {comments.length === 0 && (
+                                    <Text style={styles.noCommentsText}>No comments yet. Be the first to comment!</Text>
                                 )}
-                            </View>
-                        </View>
 
-                        {/* Bottom Buttons */}
-                        <View style={styles.bottomButtonsContainer}>
-                            <Pressable
-                                style={[
-                                    styles.bottomButton,
-                                    currentIndex >= posts.length - 1 && styles.bottomButtonDisabled,
-                                ]}
-                                onPress={handlePreviousPost}
-                                disabled={currentIndex >= posts.length - 1}
-                            >
-                                <Text style={[styles.bottomButtonText, currentIndex >= posts.length - 1 && styles.bottomButtonTextDisabled]}>
-                                    Previous posts
-                                </Text>
-                            </Pressable>
+                                {/* Render existing comments */}
+                                {comments.map((c) => (
+                                    <CommentCard
+                                        key={c.comment_id}
+                                        comment={c}
+                                        onLike={handleLike}
+                                        onReply={handleReply}
+                                        onReact={handleReact}
+                                        onAttach={handleAttachCommentImage}
+                                    />
+                                ))}
 
-                            <Pressable
-                                style={[
-                                    styles.bottomButton,
-                                    currentIndex === 0 && styles.bottomButtonDisabled,
-                                ]}
-                                onPress={handleNextPost}
-                                disabled={currentIndex === 0}
-                            >
-                                <Text style={[styles.bottomButtonText, currentIndex === 0 && styles.bottomButtonTextDisabled]}>
-                                    Next posts
-                                </Text>
-                            </Pressable>
-                        </View>
-                    </View>
-                ) : (
-                    // When comments are shown → scrollable layout with comments
-                    <ScrollView contentContainerStyle={{ paddingBottom: 30 }}>
-                        <View style={styles.postScreen}>
-                            <Text style={styles.postText}>{currentPost.content}</Text>
-
-                            <View style={styles.centerArea}>
-                                <View style={styles.row}>
-                                    <Pressable
-                                        style={[styles.choiceButton, answer === "yes" && styles.selectedYes]}
-                                        onPress={() => handleAnswer(currentPost.post_code, "like")}
-                                    >
-                                        <Text style={[styles.choiceText, answer === "yes" && styles.choiceTextSelected]}>Yes</Text>
-                                        {answer && (
-                                            <Text style={styles.countText}>
-                                                {likeCount}
-                                            </Text>
-                                        )}
-                                    </Pressable>
-
-                                    <Pressable
-                                        style={[styles.choiceButton, answer === "no" && styles.selectedNo]}
-                                        onPress={() => handleAnswer(currentPost.post_code, "dislike")}
-                                    >
-                                        <Text style={[styles.choiceText, answer === "no" && styles.choiceTextSelected]}>No</Text>
-                                        {answer && (
-                                            <Text style={styles.countText}>
-                                                {dislikeCount}
-                                            </Text>
-                                        )}
-                                    </Pressable>
-                                </View>
-
-                                <Pressable style={styles.commentButton} onPress={() => {
-                                    setComments([]);
-                                    setShowComments(false)
-                                }}>
-                                    <Text style={styles.commentText}>Hide Comments</Text>
-                                </Pressable>
-                            </View>
-                        </View>
-
-                        {/* Comments Section */}
-                        <View style={styles.commentSection}>
-                            {/* Show placeholder if no comments */}
-                            {comments.length === 0 && (
-                                <Text style={styles.noCommentsText}>No comments yet. Be the first to comment!</Text>
-                            )}
-
-                            {/* Render existing comments */}
-                            {comments.map((c) => (
-                                <CommentCard
-                                    key={c.comment_id}
-                                    comment={c}
-                                    onLike={handleLike}
-                                    onReply={handleReply}
-                                    onReact={handleReact}
-                                    onAttach={handleAttach}
+                                {/* New comment input */}
+                                <CommentInput
+                                    onSend={({ text, image }) => {
+                                        if (!text.trim()) return;
+                                        setNewComment(text);
+                                        setNewCommentImage(image);
+                                        handleSendComment(text, image);
+                                    }}
                                 />
-                            ))}
 
-                            {/* New comment input */}
-                            <View style={styles.replyContainer}>
-                                <TextInput
-                                    style={styles.replyInput}
-                                    placeholder="Write a comment..."
-                                    value={newComment}
-                                    onChangeText={setNewComment}
-                                />
-                                <Pressable onPress={() => handleAttach("newComment")} style={styles.attachIcon}>
-                                    <Text>📎</Text>
-                                </Pressable>
-                                <Pressable onPress={handleSendComment} style={styles.sendIcon}>
-                                    <Text>➡️</Text>
-                                </Pressable>
                             </View>
-                        </View>
 
 
-                    </ScrollView>
-                )}
-            </ScrollView>
-            <AlertModal
-                visible={customAlert.visible}
-                alertText={customAlert.message}
-                showCancel={customAlert.showCancel}
-                showOk={true}
-                onOk={() => {
-                    if (customAlert.onOk) customAlert.onOk();
-                    setCustomAlert(prev => ({ ...prev, visible: false }));
-                }}
-                onCancel={() => {
-                    if (customAlert.onCancel) customAlert.onCancel();
-                    setCustomAlert(prev => ({ ...prev, visible: false }));
-                }}
-                okText="OK"
-                cancelText="Cancel"
-            />
+                        </ScrollView>
+                    )}
+                </ScrollView>
+                <AlertModal
+                    visible={customAlert.visible}
+                    alertText={customAlert.message}
+                    showCancel={customAlert.showCancel}
+                    showOk={true}
+                    onOk={() => {
+                        if (customAlert.onOk) customAlert.onOk();
+                        setCustomAlert(prev => ({ ...prev, visible: false }));
+                    }}
+                    onCancel={() => {
+                        if (customAlert.onCancel) customAlert.onCancel();
+                        setCustomAlert(prev => ({ ...prev, visible: false }));
+                    }}
+                    okText="OK"
+                    cancelText="Cancel"
+                />
 
-        </View>
+            </View>
+        </KeyboardAvoidingView>
     );
 };
 
@@ -633,7 +636,7 @@ const styles = StyleSheet.create({
     },
     bottomButtonsContainer: {
         flexDirection: "row",
-        justifyContent: "space-between",
+        // justifyContent: "space-between",
         marginTop: 20,
         paddingHorizontal: 20,
     },

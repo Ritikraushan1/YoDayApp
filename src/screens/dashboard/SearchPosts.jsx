@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     View,
     TextInput,
@@ -11,30 +11,24 @@ import {
 } from "react-native";
 import PostCard from "../../components/PostCard";
 import { BackIcon } from "../../assets/icon/MenuIcons";
+import { PostService } from "../../api/PostService";
 
 const SearchPostsScreen = ({ navigation }) => {
     const [query, setQuery] = useState("");
     const [loading, setLoading] = useState(false);
     const [results, setResults] = useState([]);
-    const [answerMap, setAnswerMap] = useState({}); // store answers for posts
+    const [answerMap, setAnswerMap] = useState({});
 
-    const handleSearch = async () => {
-        if (!query.trim()) return;
+    // 🔎 Fetch posts by query
+    const getSearchedPosts = async (searchText) => {
+        if (!searchText.trim()) {
+            setResults([]);
+            return;
+        }
         setLoading(true);
         try {
-            // replace with your API call
-            // const response = await fetch(
-            //     `https://your-api.com/search?query=${query}`
-            // );
-            const posts = [
-                { id: "1", content: "I had a nice day" },
-                { id: "2", content: "Learning React Native is fun!" },
-                { id: "3", content: "Tomorrow I will travel to Delhi" },
-                { id: "4", content: "Learning React Native is fun!" },
-                { id: "5", content: "Tomorrow I will travel to Delhi" },
-            ];
-            // const data = await response.json();
-            setResults(posts);
+            const res = await PostService.getPostBySearchQuery(searchText);
+            setResults(res?.data?.posts || []);
         } catch (error) {
             console.error("Search error:", error);
         } finally {
@@ -42,15 +36,35 @@ const SearchPostsScreen = ({ navigation }) => {
         }
     };
 
-    const handleAnswer = (postId, answer) => {
-        setAnswerMap((prev) => ({ ...prev, [postId]: answer }));
-        // optionally send to API
+    // ⏳ Debounce: run search when user stops typing
+    useEffect(() => {
+        const delayDebounce = setTimeout(() => {
+            if (query.trim()) {
+                getSearchedPosts(query);
+            } else {
+                setResults([]);
+            }
+        }, 500); // wait 500ms after user stops typing
+
+        return () => clearTimeout(delayDebounce); // cleanup
+    }, [query]);
+
+    const handleAnswer = async (postCode, type) => {
+        try {
+            const res = await PostService.reactPost(postCode, type);
+
+            if (res.status === 200) {
+                await getSearchedPosts(query)
+            }
+        } catch (error) {
+            console.error("Failed to react to post", error);
+        }
     };
+
 
     const onPressPostCard = (post) => {
         navigation.navigate("SinglePost", { post });
     };
-
 
     return (
         <SafeAreaView style={styles.container}>
@@ -64,7 +78,6 @@ const SearchPostsScreen = ({ navigation }) => {
                     placeholder="Search posts..."
                     value={query}
                     onChangeText={setQuery}
-                    onSubmitEditing={handleSearch}
                     returnKeyType="search"
                 />
             </View>
@@ -72,12 +85,12 @@ const SearchPostsScreen = ({ navigation }) => {
             {/* Results */}
             {loading ? (
                 <ActivityIndicator size="large" color="#007bff" style={{ marginTop: 20 }} />
-            ) : results.length === 0 ? (
+            ) : results.length === 0 && query ? (
                 <Text style={styles.emptyText}>No posts found</Text>
             ) : (
                 <FlatList
                     data={results}
-                    keyExtractor={(item) => item.id.toString()}
+                    keyExtractor={(item) => item?.post_code?.toString()}
                     renderItem={({ item }) => (
                         <PostCard
                             currentPost={item}
@@ -100,10 +113,8 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: "#ddd",
         backgroundColor: "#f9f9f9",
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'flex-start',
-        // marginHorizontal: '10%'
+        flexDirection: "row",
+        alignItems: "center",
     },
     searchInput: {
         backgroundColor: "#fff",
@@ -113,8 +124,8 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: "#ccc",
         fontSize: 16,
-        width: '80%',
-        marginLeft: '10%'
+        width: "80%",
+        marginLeft: "10%",
     },
     list: { padding: 12 },
     emptyText: {

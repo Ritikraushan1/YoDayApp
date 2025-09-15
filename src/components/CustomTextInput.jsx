@@ -10,6 +10,7 @@ const CustomTextInput = ({
     keyboardType = "default",
     secureTextEntry = false,
     autoCapitalize = "sentences",
+    maxLength = 250,
     error,
     errorMessage,
 }) => {
@@ -25,6 +26,7 @@ const CustomTextInput = ({
                     value={value}
                     onChangeText={onChangeText}
                     keyboardType={keyboardType}
+                    maxLength={maxLength}
                     secureTextEntry={secureTextEntry}
                     autoCapitalize={autoCapitalize}
                 />

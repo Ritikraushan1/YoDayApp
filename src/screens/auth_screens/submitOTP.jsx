@@ -60,13 +60,16 @@ const SubmitOtpScreen = ({ navigation, route }) => {
 
         const res = await AuthService.verifyOTP(country_code, mobile, transaction_id, enteredOtp)
         console.log("OTP submitted res :", res);
+
+        const expiry = Date.now() + 5 * 24 * 60 * 60 * 1000;
         const dataToStore = {
             id: res.data.id,
-            token: res.data.token
+            token: res.data.token,
+            expiry
         }
         await AsyncStorage.setItem("yodayuser", JSON.stringify(dataToStore))
         if (res.data.update_profile) {
-
+            saveUserSession(dataToStore.id, dataToStore.token, res?.data?.profile)
             navigation.navigate("UpdateProfile", {
                 id: res.data.id,
                 token: res.data.token

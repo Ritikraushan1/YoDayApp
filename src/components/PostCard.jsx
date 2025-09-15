@@ -2,42 +2,70 @@ import React from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 
 const PostCard = ({ currentPost, answer, handleAnswer, onPress }) => {
+    const {
+        content,
+        created_at,
+        post_code,
+        like_count,
+        dislike_count,
+        liked_by_you,
+        disliked_by_you,
+    } = currentPost;
+
+    const formattedDate = new Date(created_at).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+    });
+
     return (
         <Pressable style={styles.postScreen} onPress={onPress}>
-            <Text style={styles.postText}>{currentPost.content}</Text>
+            {/* Header */}
+            <View style={styles.header}>
+                <Text style={styles.meta}>
+                    {formattedDate}
+                </Text>
+            </View>
+
+            {/* Content */}
+            <Text style={styles.postText}>{content}</Text>
+
+            {/* Yes/No Area with counts */}
             <View style={styles.centerArea}>
                 <View style={styles.row}>
                     <Pressable
                         style={[
                             styles.choiceButton,
-                            answer === "yes" && styles.selectedYes,
+                            (answer === "yes" || liked_by_you) && styles.selectedYes,
                         ]}
-                        onPress={() => handleAnswer(currentPost.id, "yes")}
+                        onPress={() => handleAnswer(currentPost.post_code, "like")}
                     >
                         <Text
                             style={[
                                 styles.choiceText,
-                                answer === "yes" && styles.choiceTextSelected,
+                                (answer === "yes" || liked_by_you) &&
+                                styles.choiceTextSelected,
                             ]}
                         >
-                            Yes
+                            👍 Yes ({like_count})
                         </Text>
                     </Pressable>
 
                     <Pressable
                         style={[
                             styles.choiceButton,
-                            answer === "no" && styles.selectedNo,
+                            (answer === "no" || disliked_by_you) && styles.selectedNo,
                         ]}
-                        onPress={() => handleAnswer(currentPost.id, "no")}
+                        onPress={() => handleAnswer(currentPost.post_code, "dislike")}
                     >
                         <Text
                             style={[
                                 styles.choiceText,
-                                answer === "no" && styles.choiceTextSelected,
+                                (answer === "no" || disliked_by_you) &&
+                                styles.choiceTextSelected,
                             ]}
                         >
-                            No
+                            👎 No ({dislike_count})
                         </Text>
                     </Pressable>
                 </View>
@@ -50,7 +78,7 @@ const styles = StyleSheet.create({
     postScreen: {
         padding: 20,
         backgroundColor: "#fff",
-        borderRadius: 28,
+        borderRadius: 20,
         margin: 12,
         shadowColor: "#000",
         shadowOpacity: 0.08,
@@ -58,9 +86,16 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 4 },
         elevation: 3,
     },
-
+    header: {
+        marginBottom: 8,
+        alignItems: "center",
+    },
+    meta: {
+        fontSize: 12,
+        color: "#777",
+    },
     postText: {
-        fontSize: 22,
+        fontSize: 20,
         fontWeight: "500",
         color: "#333",
         textAlign: "center",
@@ -75,12 +110,14 @@ const styles = StyleSheet.create({
     },
     choiceButton: {
         paddingVertical: 10,
-        paddingHorizontal: 28,
+        paddingHorizontal: 20,
         borderRadius: 10,
         borderWidth: 1.5,
         borderColor: "#ccc",
+        minWidth: 120,
+        alignItems: "center",
     },
-    choiceText: { fontSize: 18, color: "#444" },
+    choiceText: { fontSize: 16, color: "#444" },
     selectedYes: { backgroundColor: "#d4edda", borderColor: "#28a745" },
     selectedNo: { backgroundColor: "#f8d7da", borderColor: "#dc3545" },
     choiceTextSelected: { fontWeight: "600" },

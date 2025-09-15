@@ -14,6 +14,7 @@ import Settings from '../screens/settings/Settings';
 import submit_mobile from '../screens/auth_screens/submit_mobile';
 import SubmitMobileScreen from '../screens/auth_screens/submit_mobile';
 import SubmitOtpScreen from '../screens/auth_screens/submitOTP';
+import PostList from '../screens/dashboard/PostList';
 
 
 const Stack = createNativeStackNavigator();
@@ -54,6 +55,11 @@ const AppNavigator = () => {
             <Stack.Screen
                 name="SearchPosts"
                 component={SearchPostsScreen}
+                options={{ title: 'Search Posts', headerShown: false }}
+            />
+            <Stack.Screen
+                name="PostList"
+                component={PostList}
                 options={{ title: 'Search Posts', headerShown: false }}
             />
             <Stack.Screen

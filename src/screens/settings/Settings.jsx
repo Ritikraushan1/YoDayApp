@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, KeyboardAvoidingView, Platform, PermissionsAndroid, Linking } from "react-native";
 import React, { useState } from "react";
 import SimpleHeader from "../../components/SimpleHeader";
 import { CameraIcon, EditIcon } from "../../assets/icon/MenuIcons";
@@ -10,7 +10,10 @@ import CustomTextInput from "../../components/CustomTextInput";
 import CustomDropDown from "../../components/CustomDropDown";
 import { UserService } from "../../api/UserService";
 import { saveUserSession } from "../../api/UserService";
-import * as Keychain from 'react-native-keychain';
+import { UploadService } from "../../api/UploadService";
+import { launchImageLibrary } from 'react-native-image-picker';
+import { PERMISSIONS, request, check, openSettings } from 'react-native-permissions';
+
 
 
 const Settings = ({ navigation }) => {
@@ -19,6 +22,7 @@ const Settings = ({ navigation }) => {
     const [showModal, setShowModal] = useState(false);
 
     // Editable states
+    const [avatar, setAvatar] = useState(user?.avatar);
     const [editingField, setEditingField] = useState(null);
     const [fullName, setFullName] = useState(user?.name || '');
     const [phone, setPhone] = useState(user?.mobile_number || '');
@@ -26,8 +30,17 @@ const Settings = ({ navigation }) => {
     const [gender, setGender] = useState(user?.gender || '');
     const [description, setDescription] = useState(user?.description || '');
 
+    const [customAlert, setCustomAlert] = useState({
+        visible: false,
+        message: "",
+        onOk: null,
+        onCancel: null,
+        showCancel: true,
+    });
+
     const handleSaveField = async (field) => {
         let body = {
+            avatar,
             name: fullName,
             email,
             mobile_number: phone,
@@ -54,6 +67,111 @@ const Settings = ({ navigation }) => {
         navigation.navigate("Login");
     };
 
+    const getAndroidPermission = () => {
+        if (Platform.Version >= 33) {
+            return PERMISSIONS.ANDROID.READ_MEDIA_IMAGES; // for photos
+        } else {
+            return PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE; // legacy storage
+        }
+    };
+    const handleChooseImage = async () => {
+        console.log("handleChooseImage called");
+
+        const permission = Platform.OS === 'android' ? getAndroidPermission() : PERMISSIONS.IOS.PHOTO_LIBRARY;
+
+        console.log("Checking permission:", permission);
+        const status = await check(permission);
+        console.log("Current permission status:", status);
+
+        if (status === 'granted') {
+            console.log("Permission granted → opening image picker");
+            openImagePicker();
+            return;
+        }
+
+        if (status === 'denied') {
+            console.log("Permission denied → requesting permission");
+            const result = await request(permission);
+            console.log("Permission request result:", result);
+            if (result === 'granted') {
+                console.log("Permission granted after request → opening image picker");
+                openImagePicker();
+            } else {
+                console.log("Permission denied after request → showing custom alert");
+                showPermissionAlert();
+            }
+            return;
+        }
+
+        if (status === 'blocked' || status === 'unavailable') {
+            console.log("Permission blocked or unavailable → showing custom alert");
+            showPermissionAlert();
+            return;
+        }
+    };
+
+    // Helper: Show custom alert to redirect user to settings
+    const showPermissionAlert = () => {
+        console.log("Showing custom permission alert");
+        setCustomAlert({
+            visible: true,
+            message: "App needs permission to access photos. Please enable it in settings.",
+            showCancel: true,
+            onOk: () => {
+                console.log("User pressed OK → opening app settings");
+                setCustomAlert(prev => ({ ...prev, visible: false }));
+                setTimeout(() => {
+                    openSettings();
+                }, 300);
+            },
+            onCancel: () => {
+                console.log("User pressed Cancel on permission alert");
+                setCustomAlert(prev => ({ ...prev, visible: false }));
+            }
+        });
+    };
+
+    // Helper: Launch image picker
+    const openImagePicker = () => {
+        console.log("Opening image library...");
+        launchImageLibrary(
+            {
+                mediaType: 'photo',
+                maxWidth: 800,
+                maxHeight: 800,
+                quality: 0.8,
+            },
+            async (response) => {
+                if (response.didCancel) {
+                    console.log("User cancelled image picker");
+                    return;
+                }
+                if (response.errorCode) {
+                    console.error("ImagePicker Error: ", response.errorMessage);
+                    return;
+                }
+
+                const image = response.assets[0];
+                console.log("Image selected:", image);
+
+                try {
+                    const url = await UploadService.uploadImageAndGetUrl(image);
+                    console.log("Image uploaded successfully, URL:", url);
+
+                    const updatedProfile = { ...user, avatar: url };
+                    dispatch(setUserInfo(updatedProfile));
+                    saveUserSession(user.id, null, updatedProfile);
+                    handleSaveField("avatar")
+                    console.log("User profile updated with new avatar");
+                } catch (err) {
+                    console.error("Image upload failed", err);
+                }
+            }
+        );
+    };
+
+
+
     return (
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={{ flex: 1 }}>
@@ -72,7 +190,7 @@ const Settings = ({ navigation }) => {
                                 </Text>
                             </View>
                         )}
-                        <Pressable style={styles.editButton}>
+                        <Pressable style={styles.editButton} onPress={handleChooseImage}>
                             <CameraIcon />
                             <Text style={styles.editText}>Edit</Text>
                         </Pressable>
@@ -84,7 +202,7 @@ const Settings = ({ navigation }) => {
                         <View style={styles.row}>
                             <Text style={styles.label}>Full Name</Text>
                             {editingField === "name" ? (
-                                <CustomTextInput value={fullName} onChangeText={setFullName} />
+                                <CustomTextInput value={fullName} onChangeText={setFullName} maxLength={30} />
                             ) : (
                                 <View style={styles.editableRow}>
                                     <Text style={styles.value}>{fullName}</Text>
@@ -104,7 +222,7 @@ const Settings = ({ navigation }) => {
                         <View style={styles.row}>
                             <Text style={styles.label}>Mobile Number</Text>
                             {editingField === "phone" ? (
-                                <CustomTextInput value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+                                <CustomTextInput value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={10} />
                             ) : (
                                 <View style={styles.editableRow}>
                                     <Text style={styles.value}>{phone}</Text>
@@ -124,7 +242,7 @@ const Settings = ({ navigation }) => {
                         <View style={styles.row}>
                             <Text style={styles.label}>Email</Text>
                             {editingField === "email" ? (
-                                <CustomTextInput value={email} onChangeText={setEmail} keyboardType="email-address" />
+                                <CustomTextInput value={email} onChangeText={setEmail} keyboardType="email-address" maxLength={50} />
                             ) : (
                                 <View style={styles.editableRow}>
                                     <Text style={styles.value}>{email}</Text>
@@ -169,7 +287,7 @@ const Settings = ({ navigation }) => {
                         <View style={styles.row}>
                             <Text style={styles.label}>Description</Text>
                             {editingField === "description" ? (
-                                <CustomTextInput value={description} onChangeText={setDescription} />
+                                <CustomTextInput value={description} onChangeText={setDescription} maxLength={200} />
                             ) : (
                                 <View style={styles.editableRow}>
                                     <Text style={styles.value}>{description}</Text>
@@ -188,21 +306,32 @@ const Settings = ({ navigation }) => {
 
                     {/* Logout */}
                     <View style={styles.logoutContainer}>
-                        <Pressable style={styles.logoutButton} onPress={() => setShowModal(true)}>
+                        <Pressable style={styles.logoutButton} onPress={() => setCustomAlert({
+                            visible: true,
+                            message: "Are you sure you want to log out?",
+                            showCancel: true,
+                            onOk: handleLogout,
+                            onCancel: () => setCustomAlert({ ...customAlert, visible: false }),
+                        })}>
                             <Text style={styles.logoutText}>Log Out</Text>
                         </Pressable>
                     </View>
 
                     <AlertModal
-                        visible={showModal}
-                        onClose={() => setShowModal(false)}
-                        alertText="Are you sure you want to log out?"
-                        showCancel={true}
+                        visible={customAlert.visible}
+                        alertText={customAlert.message}
+                        showCancel={customAlert.showCancel}
                         showOk={true}
-                        cancelText="No"
-                        okText="Yes"
-                        onCancel={() => setShowModal(false)}
-                        onOk={handleLogout}
+                        onOk={() => {
+                            if (customAlert.onOk) customAlert.onOk();
+                            setCustomAlert(prev => ({ ...prev, visible: false }));
+                        }}
+                        onCancel={() => {
+                            if (customAlert.onCancel) customAlert.onCancel();
+                            setCustomAlert(prev => ({ ...prev, visible: false }));
+                        }}
+                        okText="OK"
+                        cancelText="Cancel"
                     />
                 </ScrollView>
             </View>

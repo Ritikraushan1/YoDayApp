@@ -24,6 +24,7 @@ const getPushNotificationToken = async () => {
         }
     return registrationToken;
 };
+
 async function registerUser(country_code, mobile_number) {
     let url = Config.API_URL + YDAPI.REGISTER_USER;
     let logreq = {
@@ -222,18 +223,12 @@ async function loginWithFacebook(access_token) {
                 let result = '';
                 console.log(response.status, response.data);
                 switch (response.status) {
+                    case 200:
                     case 201:
-                        if (
-                            response.data.transaction_id !== null &&
-                            response.data.transaction_id !== undefined
-                        ) {
-                            result = {
-                                status: response.status,
-                                new_registration: response.data.new_registration,
-                                transaction_id: response.data.transaction_id,
-                            };
-                            console.log('result after new account creation', response.data);
-                        }
+                        result = {
+                            status: response.status,
+                            data: response.data,
+                        };
                         break;
                     case 400:
                         result = {
@@ -264,9 +259,58 @@ async function loginWithFacebook(access_token) {
     });
 }
 
+async function getRefreshToken(tokenval) {
+    let url = Config.API_URL + '/auth/refresh'
+    let headers = {
+        Authorization: `Bearer ${tokenval}`
+    }
+    return new Promise((resolve, reject) => {
+        axios
+            .get(url, { headers: headers })
+            .then(response => {
+                let result = '';
+                console.log(response.status, response.data);
+                switch (response.status) {
+                    case 200:
+                        result = {
+                            status: response.status,
+                            data: response.data,
+                        };
+                        break;
+                    case 400:
+                        result = {
+                            status: response.status,
+                            message: response.data.message,
+                        };
+                        break;
+                    case 500:
+                        result = {
+                            status: response.status,
+                            message: 'Server Error',
+                        };
+                        break;
+                    default:
+                        result = {
+                            status: response.status,
+                            message: 'unhandled',
+                        };
+                        break;
+                }
+
+                resolve(result);
+            })
+            .catch(err => {
+                console.log("error", err)
+                // alert(JSON.stringify(err));
+                reject(err);
+            });
+    });
+}
+
 export const AuthService = {
     registerUser,
     loginWithFacebook,
     verifyOTP,
-    resendOtp
+    resendOtp,
+    getRefreshToken
 }

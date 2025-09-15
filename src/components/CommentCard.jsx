@@ -6,11 +6,13 @@ import {
     Pressable,
     TextInput,
     TouchableOpacity,
+    Image
 } from "react-native";
 import CommentActionSheet from "./CommentActionsSheet";
 import Clipboard from "@react-native-clipboard/clipboard";
 import ReportModal from "./ReportModal";
 import { CommentsService } from "../api/CommentService";
+import CommentInput from "./CommentInput";
 
 const CommentCard = ({ comment, onLike, onReply, onReact, onAttach }) => {
     const [showReplyInput, setShowReplyInput] = useState(false);
@@ -18,15 +20,17 @@ const CommentCard = ({ comment, onLike, onReply, onReact, onAttach }) => {
     const [replyText, setReplyText] = useState("");
     const [showReportModal, setShowReportModal] = useState(false);
     const [showActionSheet, setShowActionSheet] = useState(false);
+    const [showReplyComments, setShowReplyComments] = useState(false)
 
-    const handleReply = () => {
-        if (replyText.trim()) {
-            onReply(comment.comment_id, replyText);
-            setReplyText("");
+
+    const handleReply = ({ text, image }) => {
+        if (text.trim() || image) {
+            onReply(comment.comment_id, text, image); // pass text + image to parent
             setShowReplyInput(false);
-            setShowReplies(true); // show replies after submitting one
+            setShowReplies(true); // auto-show replies after submitting
         }
     };
+
 
     const handleReport = () => {
         setShowActionSheet(false);
@@ -54,11 +58,19 @@ const CommentCard = ({ comment, onLike, onReply, onReact, onAttach }) => {
     };
 
     return (
-        <Pressable onLongPress={() => setShowActionSheet(true)} // 👈 open action sheet on long press
+        <Pressable onPress={() => setShowReplies(!showReplies)} onLongPress={() => setShowActionSheet(true)} // 👈 open action sheet on long press
             delayLongPress={300}>
             <View style={styles.card}>
                 <Text style={styles.author}>{comment.username}</Text>
                 <Text style={styles.text}>{comment.text}</Text>
+
+                {comment?.image_url && (
+                    <Image
+                        source={{ uri: comment.image_url }}
+                        style={styles.commentImage}
+                        resizeMode="cover"
+                    />
+                )}
 
                 {/* Action buttons */}
                 <View style={styles.actions}>
@@ -77,33 +89,14 @@ const CommentCard = ({ comment, onLike, onReply, onReact, onAttach }) => {
 
                 {/* Reply input */}
                 {showReplyInput && (
-                    <View style={styles.replyBox}>
-                        {/* Attach button */}
-                        <TouchableOpacity
-                            style={styles.attachBtn}
-                            onPress={() => onAttach && onAttach(comment.id)}
-                        >
-                            <Text style={styles.attachText}>＋</Text>
-                        </TouchableOpacity>
-
-                        {/* Input */}
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Write a reply..."
-                            value={replyText}
-                            onChangeText={setReplyText}
-                        />
-
-                        {/* Send button */}
-                        <Pressable style={styles.sendBtn} onPress={handleReply}>
-                            <Text style={styles.sendText}>Send</Text>
-                        </Pressable>
-                    </View>
+                    <CommentInput
+                        onSend={handleReply}
+                    />
                 )}
 
                 {/* Nested replies (only when requested) */}
                 {/* Nested replies (always show if they exist) */}
-                {comment.replies?.length > 0 && (
+                {showReplies && comment.replies?.length > 0 && (
                     <View style={styles.replies}>
                         {comment.replies.map((reply) => (
                             <CommentCard
@@ -212,4 +205,11 @@ const styles = StyleSheet.create({
         borderLeftColor: "#eee",
         paddingLeft: 10,
     },
+    commentImage: {
+        width: "70%",
+        height: 180,
+        borderRadius: 8,
+        marginTop: 6,
+    },
+
 });

@@ -10,3 +10,4 @@ export const COMMENTS = '/comments/';
 export const COMMENTS_REPLY = '/comments/reply';
 export const ADD_TICKETS = '/tickets';
 export const GET_MY_TICKETS = '/tickets/my-tickets';
+export const UPLOAD_IMAGES = '/upload/image'

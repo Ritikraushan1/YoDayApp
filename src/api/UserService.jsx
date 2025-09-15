@@ -44,7 +44,7 @@ export const saveUserSession = async (id, token, profile) => {
     }
 };
 
-async function updateUserProfile(data) {
+async function updateUserProfile(data, token = null) {
     let url = Config.API_URL + YDAPI.PROFILE_SELF;
     console.log("url and data in update", url, data);
     const user = await getUserInformation();

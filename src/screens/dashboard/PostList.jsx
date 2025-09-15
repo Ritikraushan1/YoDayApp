@@ -1,7 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     View,
-    TextInput,
     FlatList,
     StyleSheet,
     ActivityIndicator,
@@ -11,72 +10,104 @@ import {
 } from "react-native";
 import PostCard from "../../components/PostCard";
 import { BackIcon } from "../../assets/icon/MenuIcons";
+import { PostService } from "../../api/PostService";
+import { useSelector } from "react-redux";
+import CustomDropDown from "../../components/CustomDropDown"; // assuming you have this component
 
-const PostList = ({ navigation, route }) => {
-    const [query, setQuery] = useState("");
+const PostList = ({ navigation }) => {
+    const user = useSelector(state => state.user.userInfo);
+
     const [loading, setLoading] = useState(false);
-    const [results, setResults] = useState([]);
-    const [answerMap, setAnswerMap] = useState({}); // store answers for posts
+    const [posts, setPosts] = useState([]);
+    const [filteredPosts, setFilteredPosts] = useState([]);
+    const [filter, setFilter] = useState(""); // "Liked" or "Disliked"
+    const [answerMap, setAnswerMap] = useState({});
 
-    const handleSearch = async () => {
-        if (!query.trim()) return;
+    // Fetch all posts
+    const getAllPosts = async () => {
         setLoading(true);
         try {
-            // replace with your API call
-            // const response = await fetch(
-            //     `https://your-api.com/search?query=${query}`
-            // );
-            const posts = [
-                { id: "1", content: "I had a nice day" },
-                { id: "2", content: "Learning React Native is fun!" },
-                { id: "3", content: "Tomorrow I will travel to Delhi" },
-                { id: "4", content: "Learning React Native is fun!" },
-                { id: "5", content: "Tomorrow I will travel to Delhi" },
-            ];
-            // const data = await response.json();
-            setResults(posts);
+            const res = await PostService.getAllPosts();
+            const postsWithUserReactions = (res?.data?.posts || []).map((post) => ({
+                ...post,
+                likedByUser: post.liked_by_you ?? false,
+                dislikedByUser: post.disliked_by_you ?? false,
+            }));
+            setPosts(postsWithUserReactions);
+            setFilteredPosts(postsWithUserReactions); // default: show all
         } catch (error) {
-            console.error("Search error:", error);
+            console.error("Failed to fetch posts:", error);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleAnswer = (postId, answer) => {
-        setAnswerMap((prev) => ({ ...prev, [postId]: answer }));
-        // optionally send to API
+    useEffect(() => {
+        getAllPosts();
+    }, []);
+
+    // Filter posts when filter changes
+    useEffect(() => {
+        if (filter === "Liked") {
+            setFilteredPosts(posts.filter(post => post.likedByUser));
+        } else if (filter === "Disliked") {
+            setFilteredPosts(posts.filter(post => post.dislikedByUser));
+        } else {
+            setFilteredPosts(posts);
+        }
+    }, [filter, posts]);
+
+    // Handle Yes/No reactions
+    const handleAnswer = async (postCode, type) => {
+        try {
+            const res = await PostService.reactPost(postCode, type);
+            if (res.status === 200) {
+                await getAllPosts();
+            }
+        } catch (error) {
+            console.error("Failed to react to post", error);
+        }
     };
 
+    // Navigate to single post screen
     const onPressPostCard = (post) => {
         navigation.navigate("SinglePost", { post });
     };
 
-
     return (
         <SafeAreaView style={styles.container}>
-            {/* Header with Search Input */}
+            {/* Header */}
             <View style={styles.header}>
                 <Pressable onPress={() => navigation.goBack()}>
                     <BackIcon />
                 </Pressable>
-                <Text>
-                    Liked Posts
-                </Text>
+                <Text style={styles.headerText}>All Posts</Text>
             </View>
 
-            {/* Results */}
+            {/* Filter Dropdown */}
+            {/* <View style={styles.filterContainer}>
+                <CustomDropDown
+                    label="Filter"
+                    placeholder="Select Filter"
+                    value={filter}
+                    dropDownItems={["", "Liked", "Disliked"]}
+                    onSelect={setFilter}
+                />
+            </View> */}
+
+            {/* Posts */}
             {loading ? (
                 <ActivityIndicator size="large" color="#007bff" style={{ marginTop: 20 }} />
-            ) : results.length === 0 ? (
+            ) : filteredPosts.length === 0 ? (
                 <Text style={styles.emptyText}>No posts found</Text>
             ) : (
                 <FlatList
-                    data={results}
-                    keyExtractor={(item) => item.id.toString()}
+                    data={filteredPosts}
+                    keyExtractor={(item) => item.post_code.toString()}
                     renderItem={({ item }) => (
                         <PostCard
                             currentPost={item}
-                            answer={answerMap[item.id]}
+                            answer={answerMap[item.post_code]}
                             handleAnswer={handleAnswer}
                             onPress={() => onPressPostCard(item)}
                         />
@@ -97,19 +128,13 @@ const styles = StyleSheet.create({
         backgroundColor: "#f9f9f9",
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'flex-start',
-        // marginHorizontal: '10%'
+        gap: 12,
     },
-    searchInput: {
-        backgroundColor: "#fff",
-        paddingVertical: 10,
-        paddingHorizontal: 15,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: "#ccc",
-        fontSize: 16,
-        width: '80%',
-        marginLeft: '10%'
+    headerText: { fontSize: 18, fontWeight: '600', color: '#111' },
+    filterContainer: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        backgroundColor: "#f2f2f2",
     },
     list: { padding: 12 },
     emptyText: {
