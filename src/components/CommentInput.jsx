@@ -67,6 +67,8 @@ const CommentInput = ({ onSend }) => {
     };
 
     const handleSend = () => {
+        console.log("handle send clicked");
+
         if (!text.trim() && !image) {
             console.log("⚠️ Nothing to send (empty text & no image).");
             return;

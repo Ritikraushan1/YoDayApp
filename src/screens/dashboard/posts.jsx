@@ -164,11 +164,6 @@ const Posts = ({ navigation }) => {
 
 
     const handleSendComment = async (text, image) => {
-        if (!newComment.trim()) return;
-        console.log("new comment", newComment);
-        console.log("new comment image", newCommentImage);
-
-
 
         try {
             const res = await CommentsService.addNewComments(currentPost.post_code, text, image);
@@ -180,8 +175,8 @@ const Posts = ({ navigation }) => {
                     {
                         id: Date.now().toString(),
                         username: user.name,
-                        text: newComment,
-                        image: newCommentImage,
+                        text: text,
+                        image_url: image,
                         replies: [],
                     },
                 ]);
@@ -501,7 +496,6 @@ const Posts = ({ navigation }) => {
                                 {/* New comment input */}
                                 <CommentInput
                                     onSend={({ text, image }) => {
-                                        if (!text.trim()) return;
                                         setNewComment(text);
                                         setNewCommentImage(image);
                                         handleSendComment(text, image);

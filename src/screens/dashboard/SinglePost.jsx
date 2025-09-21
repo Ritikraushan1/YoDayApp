@@ -44,14 +44,11 @@ const SinglePosts = ({ navigation, route }) => {
     };
 
     const handleSendComment = async (text, image) => {
-        if (!newComment.trim()) return;
-        console.log("new comment", newComment);
-        console.log("new comment image", newCommentImage);
-
+        console.log("in handle send comment",);
 
 
         try {
-            const res = await CommentsService.addNewComments(currentPost.post_code, text, image);
+            const res = await CommentsService.addNewComments(currentPost?.post_code, text, image);
             console.log("res after adding comments", res.data);
 
             if (res?.status === 200) {
@@ -60,12 +57,13 @@ const SinglePosts = ({ navigation, route }) => {
                     {
                         id: Date.now().toString(),
                         username: user.name,
-                        text: newComment,
-                        image: newCommentImage,
+                        text: text,
+                        image_url: image,
                         replies: [],
                     },
                 ]);
                 setNewComment(""); // clear input
+                setNewCommentImage("")
             }
         } catch (err) {
             console.error("Failed to post comment", err);
@@ -274,7 +272,7 @@ const SinglePosts = ({ navigation, route }) => {
 
                             <CommentInput
                                 onSend={({ text, image }) => {
-                                    if (!text.trim()) return;
+                                    // if (!text.trim()) return;
                                     setNewComment(text);
                                     setNewCommentImage(image);
                                     handleSendComment(text, image);

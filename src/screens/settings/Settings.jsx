@@ -38,9 +38,9 @@ const Settings = ({ navigation }) => {
         showCancel: true,
     });
 
-    const handleSaveField = async (field) => {
+    const handleSaveField = async (field, avatarUrl = avatar) => {
         let body = {
-            avatar,
+            avatar: avatarUrl,
             name: fullName,
             email,
             mobile_number: phone,
@@ -157,11 +157,12 @@ const Settings = ({ navigation }) => {
                 try {
                     const url = await UploadService.uploadImageAndGetUrl(image);
                     console.log("Image uploaded successfully, URL:", url);
+                    setAvatar(url);
 
                     const updatedProfile = { ...user, avatar: url };
                     dispatch(setUserInfo(updatedProfile));
                     saveUserSession(user.id, null, updatedProfile);
-                    handleSaveField("avatar")
+                    handleSaveField("avatar", url)
                     console.log("User profile updated with new avatar");
                 } catch (err) {
                     console.error("Image upload failed", err);

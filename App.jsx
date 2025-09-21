@@ -8,7 +8,6 @@ import { store } from './src/redux/store';
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
 
-  // Custom theme
   const MyTheme = {
     ...(isDarkMode ? DarkTheme : DefaultTheme),
     colors: {
@@ -20,9 +19,7 @@ function App() {
 
   return (
     <NavigationContainer theme={MyTheme}>
-      {/* ⚡️ Remove hard black background here */}
       <SafeAreaProvider>
-        {/* Make sure status bar text is visible */}
         <SafeAreaView style={{ flex: 1, backgroundColor: '#4267B2' }} edges={['top', 'bottom']}>
           <Provider store={store}>
             <AppNavigator />
