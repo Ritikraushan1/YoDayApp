@@ -637,7 +637,7 @@ const styles = StyleSheet.create({
 
 
     selectedYes: { backgroundColor: "#d4edda", borderColor: "#28a745" },
-    selectedNo: { backgroundColor: "#f8d7da", borderColor: "#dc3545" },
+    selectedNo: { backgroundColor: "#f8d7da", borderColor: "#595959" },
     choiceTextSelected: { fontWeight: "600" },
     commentButton: {
         backgroundColor: "#E9ECEF",

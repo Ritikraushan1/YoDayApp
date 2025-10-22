@@ -131,6 +131,18 @@ const Settings = ({ navigation }) => {
         });
     };
 
+    const deleteUserAccount = async () => {
+        try {
+            const res = await UserService.deleteUserProfile(user);
+            console.log("res after deleting user profile");
+            await dispatch(clearUserInfo());
+            await AsyncStorage.clear();
+            navigation.navigate("Login");
+        } catch (error) {
+
+        }
+    }
+
     // Helper: Launch image picker
     const openImagePicker = () => {
         console.log("Opening image library...");
@@ -315,6 +327,17 @@ const Settings = ({ navigation }) => {
                             onCancel: () => setCustomAlert({ ...customAlert, visible: false }),
                         })}>
                             <Text style={styles.logoutText}>Log Out</Text>
+                        </Pressable>
+                    </View>
+                    <View style={styles.logoutContainer}>
+                        <Pressable style={styles.logoutButton} onPress={() => setCustomAlert({
+                            visible: true,
+                            message: "Are you sure you want to delete your account?",
+                            showCancel: true,
+                            onOk: deleteUserAccount,
+                            onCancel: () => setCustomAlert({ ...customAlert, visible: false }),
+                        })}>
+                            <Text style={styles.logoutText}>Delete Account</Text>
                         </Pressable>
                     </View>
 

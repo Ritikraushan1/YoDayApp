@@ -14,9 +14,7 @@ const CommentActionSheet = ({ visible, onClose, onReport, onCopy }) => {
                     <Pressable style={styles.option} onPress={onReport}>
                         <Text style={styles.optionText}>Report</Text>
                     </Pressable>
-                    <Pressable style={styles.option} onPress={onCopy}>
-                        <Text style={styles.optionText}>Copy</Text>
-                    </Pressable>
+
                     <Pressable style={[styles.option, styles.cancel]} onPress={onClose}>
                         <Text style={[styles.optionText, { color: "red" }]}>Cancel</Text>
                     </Pressable>

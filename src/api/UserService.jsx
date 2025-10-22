@@ -112,7 +112,7 @@ async function deleteUserProfile(data) {
             .delete(url, { headers: headers })
             .then(response => {
                 let result = '';
-                console.log(response.status, response.data);
+                console.log("after deleting user account", response.status, response.data);
                 switch (response.status) {
                     case 201:
                     case 200:

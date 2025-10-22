@@ -50,17 +50,11 @@ const Header = ({ username = '', avatar = null, searchText = '', onChangeSearch,
             <View style={styles.container}>
                 {/* Avatar */}
                 <TouchableOpacity onPress={openDrawer}>
-                    {avatar ? (
-                        <Image source={{ uri: avatar }} style={styles.avatar} />
-                    ) : (
-                        <View style={styles.avatarFallback}>
-                            <Text style={styles.initials}>{getInitials()}</Text>
-                        </View>
-                    )}
+                    <Image source={require('../assets/logo.png')} style={styles.avatar} />
                 </TouchableOpacity>
 
                 {/* Username */}
-                <Text style={styles.username}>YoDay</Text>
+                <Text style={styles.username}>{username}</Text>
 
                 <View style={{ flex: 1 }} />
 
@@ -112,8 +106,8 @@ const styles = StyleSheet.create({
         height: 42,
         borderRadius: 21,
         marginRight: 10,
-        borderWidth: 2,
-        borderColor: '#fff',
+        // borderWidth: 2,
+        // borderColor: '#fff',
     },
     avatarFallback: {
         width: 42,
