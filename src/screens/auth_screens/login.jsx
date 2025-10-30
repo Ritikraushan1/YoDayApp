@@ -26,6 +26,7 @@ const LoginScreen = ({ navigation }) => {
     const dispatch = useDispatch();
     const [loading, setIsLoading] = useState(false);
     const [loaderText, setLoaderText] = useState('');
+    const [isChecked, setIsChecked] = useState(false);
     const [customAlert, setCustomAlert] = useState({
         visible: false,
         message: "",
@@ -34,6 +35,16 @@ const LoginScreen = ({ navigation }) => {
         onCancel: null,
     });
     const handleFacebookSignIn = async () => {
+        if (!isChecked) {
+            setCustomAlert({
+                visible: true,
+                message: "Please accept the Terms and Conditions before proceeding.",
+                showCancel: false,
+                onOk: () => setCustomAlert(prev => ({ ...prev, visible: false })),
+            });
+            return;
+        }
+
         try {
             const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
 
@@ -94,6 +105,15 @@ const LoginScreen = ({ navigation }) => {
 
 
     const handlePhoneLogin = () => {
+        if (!isChecked) {
+            setCustomAlert({
+                visible: true,
+                message: "Please accept the Terms and Conditions before proceeding.",
+                showCancel: false,
+                onOk: () => setCustomAlert(prev => ({ ...prev, visible: false })),
+            });
+            return;
+        }
         navigation.navigate("SubmitMobile");
     }
 
@@ -130,6 +150,25 @@ const LoginScreen = ({ navigation }) => {
                         >
                             <PhoneIcon />
                             <Text style={styles.fbButtonText}>Continue with Mobile Number</Text>
+                        </TouchableOpacity>
+                    </View>
+                    <View style={styles.termsContainer}>
+                        <TouchableOpacity
+                            style={styles.checkbox}
+                            onPress={() => setIsChecked(!isChecked)}
+                        >
+                            <View style={[styles.checkboxBox, isChecked && styles.checkboxBoxChecked]}>
+                                {isChecked && <Text style={styles.checkmark}>✓</Text>}
+                            </View>
+                            <Text style={styles.checkboxText}>
+                                I have read and agree to{' '}
+                                <Text
+                                    style={styles.linkText}
+                                    onPress={() => navigation.navigate('Terms')}
+                                >
+                                    Terms & Conditions
+                                </Text>
+                            </Text>
                         </TouchableOpacity>
                     </View>
 
@@ -254,6 +293,45 @@ const styles = StyleSheet.create({
         color: "#3b5998",
         fontWeight: "600",
     },
+    checkboxText: {
+        color: '#555',
+        fontSize: 14,
+        flexShrink: 1,
+    },
+    linkText: {
+        color: '#3b5998',
+        fontWeight: '600',
+        textDecorationLine: 'underline',
+    },
+    termsContainer: {
+        marginTop: 25,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    checkbox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    checkboxBox: {
+        width: 20,
+        height: 20,
+        borderWidth: 2,
+        borderColor: '#3b5998',
+        borderRadius: 5,
+        marginRight: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    checkboxBoxChecked: {
+        backgroundColor: '#3b5998',
+    },
+    checkmark: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+
 });
 
 export default LoginScreen;

@@ -173,7 +173,7 @@ const Posts = ({ navigation }) => {
                 setComments((prev) => [
                     ...prev,
                     {
-                        id: Date.now().toString(),
+                        id: res.data.comment.comment_id,
                         username: user.name,
                         text: text,
                         image_url: image,
@@ -267,8 +267,13 @@ const Posts = ({ navigation }) => {
         }
     };
 
-    const handleLike = async (id) => {
-        const res = await CommentsService.addLikeToComment(id);
+    const handleLike = async (comments) => {
+        let res;
+        if (comments?.likedByUser) {
+            res = await CommentsService.deleteLikeToComment(comments.comment_id);
+        } else {
+            res = await CommentsService.addLikeToComment(comments.comment_id);
+        }
         await getCommentsForPost()
     };
 
@@ -637,7 +642,7 @@ const styles = StyleSheet.create({
 
 
     selectedYes: { backgroundColor: "#d4edda", borderColor: "#28a745" },
-    selectedNo: { backgroundColor: "#f8d7da", borderColor: "#595959" },
+    selectedNo: { backgroundColor: "#f8d7da", borderColor: "#7030A0" },
     choiceTextSelected: { fontWeight: "600" },
     commentButton: {
         backgroundColor: "#E9ECEF",

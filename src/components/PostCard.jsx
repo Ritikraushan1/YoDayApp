@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
     },
     choiceText: { fontSize: 16, color: "#444" },
     selectedYes: { backgroundColor: "#d4edda", borderColor: "#28a745" },
-    selectedNo: { backgroundColor: "#f8d7da", borderColor: "#dc3545" },
+    selectedNo: { backgroundColor: "#f8d7da", borderColor: "#7030A0" },
     choiceTextSelected: { fontWeight: "600" },
 });
 

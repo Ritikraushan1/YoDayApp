@@ -334,4 +334,5 @@ export const CommentsService = {
     addLikeToComment,
     addNewReplyToComments,
     addNewReportComments,
+    deleteLikeToComment
 }
