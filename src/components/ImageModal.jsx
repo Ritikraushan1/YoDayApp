@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     View,
     TouchableOpacity,
@@ -13,6 +13,17 @@ import Feather from '@react-native-vector-icons/feather';
 const { width, height } = Dimensions.get('window');
 
 const ImageModal = ({ show, closeModal, file, text }) => {
+    const [expanded, setExpanded] = useState(false); // 👈 state for "Read More"
+
+    const toggleExpanded = () => setExpanded((prev) => !prev);
+
+    // Determine displayed text
+    const MAX_LENGTH = 120; // characters before truncation
+    const displayText =
+        text && !expanded && text.length > MAX_LENGTH
+            ? text.slice(0, MAX_LENGTH) + '...'
+            : text;
+
     return (
         <Modal
             visible={show}
@@ -46,7 +57,16 @@ const ImageModal = ({ show, closeModal, file, text }) => {
                 {/* Optional Text Overlay */}
                 {text ? (
                     <View style={styles.centeredTextWrapper}>
-                        <Text style={styles.centeredText}>{text}</Text>
+                        <Text style={styles.centeredText}>{displayText}</Text>
+
+                        {/* Read More / Less toggle */}
+                        {text.length > MAX_LENGTH && (
+                            <TouchableOpacity onPress={toggleExpanded}>
+                                <Text style={styles.readMoreText}>
+                                    {expanded ? 'Read Less' : 'Read More'}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
                 ) : null}
             </View>
@@ -92,11 +112,18 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
         backgroundColor: 'rgba(0,0,0,0.6)',
         borderRadius: 10,
+        alignItems: 'center',
     },
     centeredText: {
         color: '#fff',
         fontSize: 16,
         textAlign: 'center',
+    },
+    readMoreText: {
+        color: '#00BFFF',
+        marginTop: 6,
+        fontSize: 15,
+        fontWeight: '500',
     },
 });
 

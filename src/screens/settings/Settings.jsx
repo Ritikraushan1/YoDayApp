@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, KeyboardAvoidingView, Platform, PermissionsAndroid, Linking } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, KeyboardAvoidingView, Platform, PermissionsAndroid, Linking, BackHandler } from "react-native";
 import React, { useState } from "react";
 import SimpleHeader from "../../components/SimpleHeader";
 import { CameraIcon, EditIcon } from "../../assets/icon/MenuIcons";
@@ -64,7 +64,8 @@ const Settings = ({ navigation }) => {
         setShowModal(false);
         await dispatch(clearUserInfo());
         await AsyncStorage.clear();
-        navigation.navigate("Login");
+        await BackHandler.exitApp()
+        navigation.replace("Login");
     };
 
     const getAndroidPermission = () => {
@@ -137,7 +138,8 @@ const Settings = ({ navigation }) => {
             console.log("res after deleting user profile");
             await dispatch(clearUserInfo());
             await AsyncStorage.clear();
-            navigation.navigate("Login");
+            await BackHandler.exitApp()
+            navigation.replace("Login");
         } catch (error) {
 
         }

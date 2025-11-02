@@ -48,7 +48,7 @@ export default SimpleHeader;
 
 const styles = StyleSheet.create({
     wrapper: {
-        backgroundColor: '#4267B2',
+        backgroundColor: '#7030A0',
         zIndex: 10,
         elevation: 4,
     },

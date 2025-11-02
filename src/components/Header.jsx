@@ -8,20 +8,24 @@ import {
     StyleSheet,
     Animated,
     Dimensions,
-    StatusBar,
-    Platform
 } from 'react-native';
 import SearchIcon from '../assets/icon/SearchIcon';
 import SideMenu from './SideMenu';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-const Header = ({ username = '', avatar = null, searchText = '', onChangeSearch, onClickOnSearch }) => {
+const Header = ({
+    username = '',
+    avatar = null,
+    searchText = '',
+    onChangeSearch,
+    onClickOnSearch,
+    onRetry = () => { },      // callback when retry is pressed
+    noInternet = false,      // ✅ now comes from props
+}) => {
     const [searchVisible, setSearchVisible] = useState(false);
     const [drawerVisible, setDrawerVisible] = useState(false);
     const drawerAnim = useRef(new Animated.Value(-screenWidth)).current;
-
-    const getInitials = () => username.slice(0, 2).toUpperCase();
 
     const openDrawer = () => {
         setDrawerVisible(true);
@@ -39,16 +43,9 @@ const Header = ({ username = '', avatar = null, searchText = '', onChangeSearch,
 
     return (
         <View style={styles.wrapper}>
-            {/* Status bar control */}
-            {/* <StatusBar
-                barStyle="light-content"
-                backgroundColor="#4267B2"
-                translucent={false} // important: keep safe area working from App.jsx
-            /> */}
-
             {/* Header row */}
             <View style={styles.container}>
-                {/* Avatar */}
+                {/* Avatar / Logo */}
                 <TouchableOpacity onPress={openDrawer}>
                     <Image source={require('../assets/logo.png')} style={styles.avatar} />
                 </TouchableOpacity>
@@ -71,10 +68,23 @@ const Header = ({ username = '', avatar = null, searchText = '', onChangeSearch,
                 )}
 
                 {/* Search icon */}
-                <TouchableOpacity onPress={() => onClickOnSearch()}>
+                <TouchableOpacity onPress={onClickOnSearch}>
                     <SearchIcon color="#fff" />
                 </TouchableOpacity>
             </View>
+
+            {/* 🚫 No Internet Banner */}
+            {noInternet && (
+                <View style={styles.noInternetRow}>
+                    <Text style={styles.noInternetText}>No Internet Connection</Text>
+                    <TouchableOpacity
+                        style={styles.retryButton}
+                        onPress={onRetry}
+                    >
+                        <Text style={styles.retryText}>Retry</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
 
             {/* Drawer menu */}
             <SideMenu
@@ -90,7 +100,7 @@ export default Header;
 
 const styles = StyleSheet.create({
     wrapper: {
-        backgroundColor: '#4267B2',
+        backgroundColor: '#7030A0',
         zIndex: 10,
         elevation: 4,
     },
@@ -99,31 +109,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 14,
         paddingVertical: 12,
-        minHeight: 56, // consistent toolbar height
+        minHeight: 56,
     },
     avatar: {
         width: 42,
         height: 42,
         borderRadius: 21,
         marginRight: 10,
-        // borderWidth: 2,
-        // borderColor: '#fff',
-    },
-    avatarFallback: {
-        width: 42,
-        height: 42,
-        borderRadius: 21,
-        backgroundColor: '#FFF',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 10,
-        borderWidth: 2,
-        borderColor: '#fff',
-    },
-    initials: {
-        fontWeight: 'bold',
-        fontSize: 16,
-        color: '#4267B2',
     },
     username: {
         fontSize: 18,
@@ -139,5 +131,30 @@ const styles = StyleSheet.create({
         paddingHorizontal: 6,
         fontSize: 14,
         color: '#fff',
+    },
+    /* 🚫 No Internet Styles */
+    noInternetRow: {
+        backgroundColor: '#E74C3C',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+    },
+    noInternetText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    retryButton: {
+        backgroundColor: '#fff',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 6,
+    },
+    retryText: {
+        color: '#E74C3C',
+        fontWeight: '600',
+        fontSize: 14,
     },
 });

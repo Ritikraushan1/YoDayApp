@@ -85,6 +85,7 @@ const CommentInput = ({ onSend }) => {
                 placeholder="Write a comment..."
                 value={text}
                 onChangeText={setText}
+                maxLength={1000}
             />
 
             {/* Attach or Preview */}

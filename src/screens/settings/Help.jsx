@@ -76,7 +76,7 @@ const Help = ({ navigation }) => {
     };
 
     return (
-        <View style={{ flex: 1, backgroundColor: "#fff" }}>
+        <View style={{ flex: 1, backgroundColor: "#7030A0" }}>
             <SimpleHeader title="Help & Support" onBack={() => navigation.goBack()} />
             <View style={{ flex: 1, backgroundColor: "#4267B2" }}>
                 <ScrollView contentContainerStyle={styles.container}>

@@ -13,8 +13,20 @@ import ReportModal from "./ReportModal";
 import { CommentsService } from "../api/CommentService";
 import CommentInput from "./CommentInput";
 import ImageModal from "./ImageModal"; // 👈 import your modal component
+import { useSelector } from "react-redux";
 
-const CommentCard = ({ comment, onLike, onReply, onReact, onAttach }) => {
+const reactions = [
+    { id: "like", emoji: "👍", label: "Like" },
+    { id: "love", emoji: "❤️", label: "Love" },
+    { id: "care", emoji: "🤗", label: "Care" },
+    { id: "haha", emoji: "😂", label: "Haha" },
+    { id: "wow", emoji: "😮", label: "Wow" },
+    { id: "sad", emoji: "😢", label: "Weeping" },
+    { id: "angry", emoji: "😡", label: "Angry" },
+];
+
+const CommentCard = ({ comment, onLike, onReply, onReact, onAttach, onDelete }) => {
+    const user = useSelector(state => state.user.userInfo);
     const [showReplyInput, setShowReplyInput] = useState(false);
     const [showReplies, setShowReplies] = useState(false);
     const [replyText, setReplyText] = useState("");
@@ -26,9 +38,17 @@ const CommentCard = ({ comment, onLike, onReply, onReact, onAttach }) => {
         if (text.trim() || image) {
             onReply(comment.comment_id, text, image);
             setShowReplyInput(false);
-            setShowReplies(true);
+            setShowReplies(true); // ✅ ensures newly added reply shows
         }
     };
+
+    const getReactionDisplay = (reactionId) => {
+        if (!reactionId) return { label: "Like", emoji: "" };
+        const found = reactions.find(r => r.id === reactionId);
+        return found || { label: "Like", emoji: "" };
+    };
+
+
 
     const handleReport = () => {
         setShowActionSheet(false);
@@ -44,6 +64,7 @@ const CommentCard = ({ comment, onLike, onReply, onReact, onAttach }) => {
             data?.details,
             data?.post_code
         );
+
         console.log("res after reporting", res);
     };
 
@@ -52,12 +73,12 @@ const CommentCard = ({ comment, onLike, onReply, onReact, onAttach }) => {
     };
 
     const toggleReply = () => {
-        const newState = !showReplyInput;
-        setShowReplyInput(newState);
-        if (!newState) {
-            setShowReplies(false);
+        setShowReplyInput(!showReplyInput);
+        if (comment.replies?.length > 0) {
+            setShowReplies(true); // always show replies if they exist
         }
     };
+
 
     return (
         <Pressable
@@ -85,18 +106,30 @@ const CommentCard = ({ comment, onLike, onReply, onReact, onAttach }) => {
 
                 {/* Actions */}
                 <View style={styles.actions}>
-                    <Pressable onPress={() => onLike(comment)}>
-                        <Text style={styles.actionBtn}>
-                            Like {comment?.likes > 0 && comment?.likes}
-                        </Text>
+                    <Pressable onPress={() => onReact(comment, comment?.userReaction ? comment?.userReaction : 'like')}>
+                        {(() => {
+                            const reactionDisplay = getReactionDisplay(comment.userReaction);
+                            return (
+                                <Text style={[styles.actionBtn, comment.userReaction && { color: "#007BFF", fontWeight: "bold" }]}>
+                                    {reactionDisplay.emoji
+                                        ? `${reactionDisplay.emoji} ${reactionDisplay.label}`
+                                        : "Like"}
+                                    {comment?.totalReactions > 0 ? ` ${comment?.totalReactions}` : ""}
+                                </Text>
+                            );
+                        })()}
                     </Pressable>
 
                     <Pressable onPress={toggleReply}>
                         <Text style={styles.actionBtn}>
-                            {showReplyInput ? "Hide Reply" : "Reply"}
+                            {showReplyInput
+                                ? "Hide Reply"
+                                : `${comment.replies?.length > 0 ? comment.replies.length + ' Replies' : 'Reply'}`
+                            }
                         </Text>
                     </Pressable>
                 </View>
+
 
                 {/* Reply input */}
                 {showReplyInput && <CommentInput onSend={handleReply} />}
@@ -111,6 +144,7 @@ const CommentCard = ({ comment, onLike, onReply, onReact, onAttach }) => {
                                 onLike={onLike}
                                 onReply={onReply}
                                 onReact={onReact}
+
                                 onAttach={onAttach}
                             />
                         ))}
@@ -120,10 +154,20 @@ const CommentCard = ({ comment, onLike, onReply, onReact, onAttach }) => {
 
             {/* 👇 Action Sheet + Report Modal */}
             <CommentActionSheet
+
                 visible={showActionSheet}
                 onClose={() => setShowActionSheet(false)}
                 onReport={handleReport}
                 onCopy={handleCopy}
+                showDelete={comment.user_id === user?.id}  // ✅ show only for author
+                onDelete={() => {
+                    setShowActionSheet(false);
+                    onDelete?.(comment); // call delete handler passed from parent
+                }}
+                onReact={(reactionType) => {
+                    setShowActionSheet(false);
+                    onReact?.(comment, reactionType); // pass to parent
+                }}
             />
             <ReportModal
                 visible={showReportModal}

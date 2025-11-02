@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
         bottom: 0,
         height: screenHeight,
         width: screenWidth * 0.75,
-        backgroundColor: '#4267B2', // Dark background for modern look
+        backgroundColor: '#7030A0', // Dark background for modern look
         padding: 20,
         justifyContent: 'space-between',
     },

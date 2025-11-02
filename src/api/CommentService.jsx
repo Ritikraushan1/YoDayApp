@@ -110,6 +110,57 @@ async function addNewComments(post_code, text, image = null) {
     });
 }
 
+async function deleteComments(commentId) {
+    let url = Config.API_URL + YDAPI.COMMENTS + commentId;
+    const user = await UserService.getUserInformation();
+    let tokenval = user?.token;
+    console.log("detailsinuserinfo", url);
+    let headers = {
+        Authorization: `Bearer ${tokenval}`
+    }
+    return new Promise((resolve, reject) => {
+        axios
+            .delete(url, { headers: headers })
+            .then(response => {
+                let result = '';
+                console.log(response.status, response.data);
+                switch (response.status) {
+                    case 200:
+                        result = {
+                            status: response.status,
+                            data: response.data,
+                        };
+                        break;
+                    case 400:
+                        result = {
+                            status: response.status,
+                            message: response.data.message,
+                        };
+                        break;
+                    case 500:
+                        result = {
+                            status: response.status,
+                            message: 'Server Error',
+                        };
+                        break;
+                    default:
+                        result = {
+                            status: response.status,
+                            message: 'unhandled',
+                        };
+                        break;
+                }
+
+                resolve(result);
+            })
+            .catch(err => {
+                console.log("error", err)
+                // alert(JSON.stringify(err));
+                reject(err);
+            });
+    });
+}
+
 async function addNewReplyToComments(post_code, text, commentId, image) {
     let url = Config.API_URL + YDAPI.COMMENTS_REPLY;
     const user = await UserService.getUserInformation();
@@ -166,17 +217,18 @@ async function addNewReplyToComments(post_code, text, commentId, image) {
     });
 }
 
-async function addLikeToComment(commentId) {
-    let url = Config.API_URL + YDAPI.COMMENTS + commentId + '/like';
+async function addReactionToComment(commentId, reaction_type) {
+    let url = Config.API_URL + YDAPI.COMMENTS + commentId + '/react';
     const user = await UserService.getUserInformation();
     let tokenval = user?.token;
     console.log("detailsinuserinfo", url);
     let headers = {
         Authorization: `Bearer ${tokenval}`
     }
+
     return new Promise((resolve, reject) => {
         axios
-            .post(url, {}, { headers: headers })
+            .post(url, { reaction_type }, { headers: headers })
             .then(response => {
                 let result = '';
                 console.log(response.status, response.data);
@@ -217,8 +269,8 @@ async function addLikeToComment(commentId) {
     });
 }
 
-async function deleteLikeToComment(commentId) {
-    let url = Config.API_URL + YDAPI.COMMENTS + commentId + '/like';
+async function deleteReactionToComment(commentId) {
+    let url = Config.API_URL + YDAPI.COMMENTS + commentId + '/react';
     const user = await UserService.getUserInformation();
     let tokenval = user?.token;
     console.log("detailsinuserinfo", url);
@@ -331,8 +383,9 @@ async function addNewReportComments(commentId, type, subtype, text, post_code) {
 export const CommentsService = {
     getAllCommentsForPosts,
     addNewComments,
-    addLikeToComment,
+    deleteComments,
+    addReactionToComment,
     addNewReplyToComments,
     addNewReportComments,
-    deleteLikeToComment
+    deleteReactionToComment
 }

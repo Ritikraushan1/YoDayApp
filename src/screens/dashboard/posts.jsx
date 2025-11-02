@@ -14,6 +14,7 @@ import {
     RefreshControl,
     KeyboardAvoidingView
 } from "react-native";
+import { useNavigationState } from "@react-navigation/native";
 import Header from "../../components/Header";
 import CommentCard from "../../components/CommentCard";
 import AlertModal from "../../components/AlertModal";
@@ -26,13 +27,14 @@ import { launchImageLibrary } from "react-native-image-picker";
 import { UploadService } from "../../api/UploadService";
 import { PERMISSIONS, RESULTS, request, check } from 'react-native-permissions';
 import CommentInput from "../../components/CommentInput";
-
+import NetInfo from "@react-native-community/netinfo";
 
 
 const { height } = Dimensions.get("window");
 
 const Posts = ({ navigation }) => {
     const user = useSelector(state => state.user.userInfo);
+    const isNavigationReady = useNavigationState(state => !!state);
     console.log("user", user);
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -56,17 +58,78 @@ const Posts = ({ navigation }) => {
     });
     const [comments, setComments] = useState([]);
     const [posts, setPosts] = useState([]);
+    const [isConnected, setIsConnected] = useState(true);
+
     useEffect(() => {
-        getAllPosts()
-    }, [])
+        const unsubscribe = NetInfo.addEventListener(state => {
+            console.log("internet connected", state.isConnected);
+
+            setIsConnected(state.isConnected && state.isInternetReachable !== false);
+        });
+        return () => unsubscribe();
+    }, []);
+    useEffect(() => {
+        if (!user) {
+            const timeout = setTimeout(() => {
+                navigation.replace("Login");
+            }, 100);
+            return () => clearTimeout(timeout);
+        } else {
+            getAllPosts();
+        }
+    }, [user]);
+
+    const deleteComments = async (comment) => {
+        try {
+            const res = await CommentsService.deleteComments(comment?.comment_id);
+
+            if (res?.status === 200) {
+                // ✅ Remove the deleted comment and its replies locally
+                setComments((prevComments) =>
+                    prevComments
+                        .filter((c) => c.comment_id !== comment.comment_id) // remove top-level comment
+                        .map((c) => ({
+                            ...c,
+                            replies: c.replies?.filter(
+                                (r) => r.comment_id !== comment.comment_id && r.parent_id !== comment.comment_id
+                            ), // remove replies that belong to the deleted comment
+                        }))
+                );
+
+                // ✅ Optionally re-fetch from server for guaranteed consistency
+                await getCommentsForPost();
+            }
+        } catch (err) {
+            console.error("Failed to delete comment:", err);
+        }
+    };
+
+    const onDeleteComment = (comment) => {
+        setCustomAlert({
+            visible: true,
+            message: "Are you sure want to delete comment?",
+            onOk: async () => {
+                setCustomAlert({ visible: false });
+                await deleteComments(comment)
+            },
+            onCancel: () => {
+                setCustomAlert({ visible: false });
+            }
+        })
+    }
+
+
 
     useEffect(() => {
         if (posts.length > 0 && currentIndex < posts.length) {
-            setCurrentPost(posts[currentIndex]);
-            setLikeCount(posts[currentIndex].like_count);
-            setDislikedCount(posts[currentIndex].dislike_count);
+            const updatedPost = posts[currentIndex];
+            setCurrentPost(updatedPost);
+            setLikeCount(updatedPost.like_count ?? 0);
+            setDislikedCount(updatedPost.dislike_count ?? 0);
         } else {
             setCurrentPost(null);
+            setLikeCount(0);
+            setDislikedCount(0);
         }
     }, [posts, currentIndex]);
 
@@ -142,15 +205,17 @@ const Posts = ({ navigation }) => {
             setIsLoading(false); // hide loader
         }
     };
-    useEffect(() => {
-        getCommentsForPost()
-    }, [showComments])
-
     const getCommentsForPost = async () => {
-        const comments = await CommentsService.getAllCommentsForPosts(currentPost?.post_code);
-        console.log("comments for this post", comments);
-        setComments(comments?.data?.comments)
-    }
+        if (!currentPost?.post_code) return;
+        try {
+            const res = await CommentsService.getAllCommentsForPosts(currentPost.post_code);
+            setComments(res?.data?.comments || []);
+        } catch (err) {
+            console.error("Failed to load comments:", err);
+            setComments([]);
+        }
+    };
+
     const handleRefresh = async () => {
         setRefreshing(true);
         try {
@@ -187,62 +252,78 @@ const Posts = ({ navigation }) => {
         }
     };
 
-
-
     const handleAnswer = async (postCode, type) => {
         try {
             const res = await PostService.reactPost(postCode, type);
 
             if (res.status === 200) {
-                setPosts((prevPosts) =>
-                    prevPosts.map((post) => {
+                setPosts((prevPosts) => {
+                    const updatedPosts = prevPosts.map((post) => {
                         if (post.post_code !== postCode) return post;
 
-                        let updatedPost = { ...post };
+                        const updatedPost = { ...post };
 
                         if (type === "like") {
                             if (post.likedByUser) {
-                                // ✅ Already liked → undo like
+                                // undo like
                                 updatedPost.likedByUser = false;
-                                updatedPost.like_count = Math.max(0, post.like_count - 1);
+                                updatedPost.like_count = Math.max(0, (post.like_count ?? 0) - 1);
                             } else {
-                                // ✅ Like → remove dislike if exists
+                                // add like (and remove dislike if present)
                                 updatedPost.likedByUser = true;
-                                updatedPost.like_count = post.like_count + 1;
-
+                                updatedPost.like_count = (post.like_count ?? 0) + 1;
                                 if (post.dislikedByUser) {
                                     updatedPost.dislikedByUser = false;
-                                    updatedPost.dislike_count = Math.max(0, post.dislike_count - 1);
+                                    updatedPost.dislike_count = Math.max(0, (post.dislike_count ?? 0) - 1);
                                 }
                             }
                         } else if (type === "dislike") {
                             if (post.dislikedByUser) {
-                                // ✅ Already disliked → undo dislike
+                                // undo dislike
                                 updatedPost.dislikedByUser = false;
-                                updatedPost.dislike_count = Math.max(0, post.dislike_count - 1);
+                                updatedPost.dislike_count = Math.max(0, (post.dislike_count ?? 0) - 1);
                             } else {
-                                // ✅ Dislike → remove like if exists
+                                // add dislike (and remove like if present)
                                 updatedPost.dislikedByUser = true;
-                                updatedPost.dislike_count = post.dislike_count + 1;
-
+                                updatedPost.dislike_count = (post.dislike_count ?? 0) + 1;
                                 if (post.likedByUser) {
                                     updatedPost.likedByUser = false;
-                                    updatedPost.like_count = Math.max(0, post.like_count - 1);
+                                    updatedPost.like_count = Math.max(0, (post.like_count ?? 0) - 1);
                                 }
                             }
                         }
 
                         return updatedPost;
-                    })
-                );
+                    });
+
+                    // Re-sync currentPost with updatedPosts
+                    const updatedCurrent = updatedPosts.find(p => p.post_code === currentPost?.post_code) || null;
+                    setCurrentPost(updatedCurrent);
+
+                    // If the user just removed their reaction (no likedByUser & no dislikedByUser) while comments were visible,
+                    // hide comments and clear comments list (this returns to initial mode)
+                    if (showComments && updatedCurrent && !updatedCurrent.likedByUser && !updatedCurrent.dislikedByUser) {
+                        setShowComments(false);
+                        setComments([]);
+                    }
+
+                    // If the user just added a reaction and comments are not visible, keep comments hidden
+                    // (Comments button will be visible from render when answer exists)
+                    // If the user toggles reaction while not viewing comments, nothing else needed.
+
+                    // Also update like/dislike counts shown in UI
+                    if (updatedCurrent) {
+                        setLikeCount(updatedCurrent.like_count ?? 0);
+                        setDislikedCount(updatedCurrent.dislike_count ?? 0);
+                    }
+
+                    return updatedPosts;
+                });
             }
         } catch (error) {
             console.error("Failed to react to post", error);
         }
     };
-
-
-
 
     const handlePreviousPost = () => {
         navigation.navigate("PostList");
@@ -260,22 +341,11 @@ const Posts = ({ navigation }) => {
             });
         }
     };
-    const handleNextPost = () => {
-        if (currentIndex > 0) {
 
-            setCurrentIndex((prev) => prev - 1);
-        }
+    const handleLike = async (comment) => {
+        await handleReact(comment, "like");
     };
 
-    const handleLike = async (comments) => {
-        let res;
-        if (comments?.likedByUser) {
-            res = await CommentsService.deleteLikeToComment(comments.comment_id);
-        } else {
-            res = await CommentsService.addLikeToComment(comments.comment_id);
-        }
-        await getCommentsForPost()
-    };
 
     const handleReply = async (id, replyText, image) => {
         const res = await CommentsService.addNewReplyToComments(currentPost?.post_code, replyText, id, image);
@@ -321,14 +391,56 @@ const Posts = ({ navigation }) => {
         }
     };
 
-    const handleReact = (id) => {
-        console.log("Reacted on comment:", id);
+    // 🔹 Handle Reactions (like, love, haha, etc.)
+    const handleReact = async (comment, reactionType) => {
+        try {
+            // Check current reaction
+            const currentReaction = comment.userReaction;
+
+            // Update local UI instantly (optimistic update)
+            setComments(prevComments =>
+                prevComments.map(c =>
+                    c.comment_id === comment.comment_id
+                        ? {
+                            ...c,
+                            userReaction:
+                                currentReaction === reactionType ? null : reactionType,
+                            totalReactions:
+                                currentReaction === reactionType
+                                    ? Math.max(0, (c.totalReactions ?? 1) - 1)
+                                    : (c.totalReactions ?? 0) + (currentReaction ? 0 : 1),
+                        }
+                        : c
+                )
+            );
+
+            let res;
+            // If user clicked same reaction again → remove it
+            if (currentReaction === reactionType) {
+                res = await CommentsService.deleteReactionToComment(comment.comment_id);
+            } else {
+                // Add / Update reaction
+                res = await CommentsService.addReactionToComment(comment.comment_id, reactionType);
+            }
+
+            // Optionally refresh comments to ensure backend sync
+            await getCommentsForPost();
+        } catch (error) {
+            console.error("Error handling reaction:", error);
+        }
     };
+
     const handleSearchClick = () => {
         navigation.navigate("SearchPosts")
     }
+    const handleRetryConnection = async () => {
+        const state = await NetInfo.fetch();
+        setIsConnected(state.isConnected && state.isInternetReachable !== false);
 
-    console.log("current post", currentPost);
+        if (state.isConnected) {
+            getAllPosts(); // ✅ Retry fetching posts if back online
+        }
+    };
 
     const answer = currentPost
         ? currentPost.likedByUser
@@ -351,6 +463,8 @@ const Posts = ({ navigation }) => {
                     searchText={searchText}
                     onChangeSearch={(text) => setSearchText(text)}
                     onClickOnSearch={handleSearchClick}
+                    noInternet={!isConnected}          // ✅ Pass as prop
+                    onRetry={handleRetryConnection}
                 />
                 <DesignedLoader visible={isLoading} text="Loading posts..." />
                 <ScrollView
@@ -366,7 +480,7 @@ const Posts = ({ navigation }) => {
                     }
                 >
                     {/* Main Content */}
-                    {!showComments ? (
+                    {(!showComments) ? (
                         // When comments are hidden → post takes full space
                         <View style={styles.fullPostScreen}>
                             {/* Post Date at Top-Right */}
@@ -406,7 +520,10 @@ const Posts = ({ navigation }) => {
                                     </View>
 
                                     {answer && (
-                                        <Pressable style={styles.commentButton} onPress={() => setShowComments(true)}>
+                                        <Pressable style={styles.commentButton} onPress={async () => {
+                                            setShowComments(true);
+                                            await getCommentsForPost();  // ✅ Fetch comments here
+                                        }}>
                                             <Text style={styles.commentText}>Comments</Text>
                                         </Pressable>
                                     )}
@@ -482,22 +599,21 @@ const Posts = ({ navigation }) => {
                             {/* Comments Section */}
                             <View style={styles.commentSection}>
                                 {/* Show placeholder if no comments */}
-                                {comments.length === 0 && (
+                                {comments.length === 0 ? (
                                     <Text style={styles.noCommentsText}>No comments yet. Be the first to comment!</Text>
+                                ) : (
+                                    comments.map((c) => (
+                                        <CommentCard
+                                            key={c.comment_id}
+                                            comment={c}
+                                            onLike={handleLike}
+                                            onReply={handleReply}
+                                            onReact={handleReact}
+                                            onDelete={onDeleteComment}
+                                            onAttach={handleAttachCommentImage}
+                                        />
+                                    ))
                                 )}
-
-                                {/* Render existing comments */}
-                                {comments.map((c) => (
-                                    <CommentCard
-                                        key={c.comment_id}
-                                        comment={c}
-                                        onLike={handleLike}
-                                        onReply={handleReply}
-                                        onReact={handleReact}
-                                        onAttach={handleAttachCommentImage}
-                                    />
-                                ))}
-
                                 {/* New comment input */}
                                 <CommentInput
                                     onSend={({ text, image }) => {
