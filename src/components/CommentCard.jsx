@@ -25,7 +25,7 @@ const reactions = [
     { id: "angry", emoji: "😡", label: "Angry" },
 ];
 
-const CommentCard = ({ comment, onLike, onReply, onReact, onAttach, onDelete }) => {
+const CommentCard = ({ comment, onLike, onReply, onReact, onAttach, onDelete, level = 0 }) => {
     const user = useSelector(state => state.user.userInfo);
     const [showReplyInput, setShowReplyInput] = useState(false);
     const [showReplies, setShowReplies] = useState(false);
@@ -136,7 +136,12 @@ const CommentCard = ({ comment, onLike, onReply, onReact, onAttach, onDelete }) 
 
                 {/* Nested replies */}
                 {showReplies && comment.replies?.length > 0 && (
-                    <View style={styles.replies}>
+                    <View
+                        style={[
+                            styles.replies,
+                            { marginLeft: level >= 2 ? 20 : 20 * (level + 1) }, // 👈 limit indentation
+                        ]}
+                    >
                         {comment.replies.map((reply) => (
                             <CommentCard
                                 key={reply.comment_id}
@@ -144,8 +149,9 @@ const CommentCard = ({ comment, onLike, onReply, onReact, onAttach, onDelete }) 
                                 onLike={onLike}
                                 onReply={onReply}
                                 onReact={onReact}
-
                                 onAttach={onAttach}
+                                onDelete={onDelete}
+                                level={level + 1} // 👈 increase nesting level
                             />
                         ))}
                     </View>
@@ -223,7 +229,6 @@ const styles = StyleSheet.create({
     },
     replies: {
         marginTop: 10,
-        marginLeft: 20,
         borderLeftWidth: 1,
         borderLeftColor: "#eee",
         paddingLeft: 10,

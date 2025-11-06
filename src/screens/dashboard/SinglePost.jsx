@@ -437,6 +437,7 @@ const SinglePosts = ({ navigation, route }) => {
                                     onReact={handleReact}
                                     onDelete={onDeleteComment}
                                     onAttach={handleAttachCommentImage}
+                                    level={0}
                                 />
                             ))}
 

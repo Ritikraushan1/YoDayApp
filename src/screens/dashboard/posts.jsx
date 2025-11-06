@@ -611,6 +611,7 @@ const Posts = ({ navigation }) => {
                                             onReact={handleReact}
                                             onDelete={onDeleteComment}
                                             onAttach={handleAttachCommentImage}
+                                            level={0}
                                         />
                                     ))
                                 )}
