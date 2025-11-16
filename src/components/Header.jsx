@@ -54,7 +54,7 @@ const Header = ({ username = '', avatar = null, searchText = '', onChangeSearch,
                 </TouchableOpacity>
 
                 {/* Username */}
-                <Text style={styles.username}>{username}</Text>
+                <Text style={styles.username}>YODAY</Text>
 
                 <View style={{ flex: 1 }} />
 
@@ -90,7 +90,7 @@ export default Header;
 
 const styles = StyleSheet.create({
     wrapper: {
-        backgroundColor: '#4267B2',
+        backgroundColor: '#7030A0',
         zIndex: 10,
         elevation: 4,
     },

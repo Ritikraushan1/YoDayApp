@@ -27,15 +27,18 @@ const getPushNotificationToken = async () => {
 
 async function registerUser(country_code, mobile_number) {
     let url = Config.API_URL + YDAPI.REGISTER_USER;
-    let logreq = {
-        country_code: country_code,
-        mobile_number: mobile_number,
+    let device_info = {
         app_version: DeviceInfo.CurrentDeviceAppVersion,
         device_os: DeviceInfo.DevicePlatform,
         os_version: DeviceInfo.DeviceSystemVersion,
         device_model: DeviceInfo.DeviceModel,
         device_name: await DeviceInfo.DeviceName,
         push_token: await getPushNotificationToken(),
+    }
+    let logreq = {
+        country_code: country_code,
+        mobile_number: mobile_number,
+        device_info
     };
     console.log("register body url", url);
 
