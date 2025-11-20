@@ -466,7 +466,7 @@ const Posts = ({ navigation }) => {
                     noInternet={!isConnected}          // ✅ Pass as prop
                     onRetry={handleRetryConnection}
                 />
-                <DesignedLoader visible={isLoading} text="Loading posts..." />
+                {/* <DesignedLoader visible={isLoading} text="Loading posts..." /> */}
                 <ScrollView
                     contentContainerStyle={{ flexGrow: 1, backgroundColor: 'white' }}
                     refreshControl={

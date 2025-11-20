@@ -32,7 +32,7 @@ const Settings = ({ navigation }) => {
 
     const [customAlert, setCustomAlert] = useState({
         visible: false,
-        message: "",
+        message: "Updating Profile...",
         onOk: null,
         onCancel: null,
         showCancel: true,

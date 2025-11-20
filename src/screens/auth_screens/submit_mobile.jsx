@@ -29,9 +29,7 @@ const SubmitMobileScreen = ({ navigation }) => {
         }
         console.log("Mobile number submitted:", `+91${mobile}`);
         const res = await AuthService.registerUser(country_code, mobile);
-        console.log("res after submitting mobile", res);
         if (res.status === 201 || res.status === 200) {
-            Alert.alert("OTP Sent", res.otp)
             navigation.navigate("SubmitOTP", {
                 country_code,
                 mobile,

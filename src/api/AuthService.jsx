@@ -59,7 +59,6 @@ async function registerUser(country_code, mobile_number) {
                                 status: response.status,
                                 new_registration: response.data.new_registration,
                                 transaction_id: response.data.transaction_id,
-                                otp: response?.data?.otp,
                             };
                             console.log('result after new account creation', response.data);
                         }
