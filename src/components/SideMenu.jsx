@@ -69,9 +69,9 @@ const SideMenu = ({ visible, onClose, onSelectOption }) => {
                                 </Text>
                             </View>
                         )}
-                        <View>
+                        <View style={styles.textContainer}>
                             <Text style={styles.profileName}>{user?.name}</Text>
-                            <Text style={styles.profileLocation}>{user?.description}</Text>
+                            <Text style={styles.profileLocation} numberOfLines={2}>{user?.description}</Text>
                         </View>
                     </View>
 
@@ -95,7 +95,7 @@ const SideMenu = ({ visible, onClose, onSelectOption }) => {
 
                     {/* 🔹 Footer */}
                     <View style={styles.footer}>
-                        <Text style={styles.footerText}>Yoday © v{version} ({buildNumber})</Text>
+                        <Text style={styles.footerText}>YoDay © v{version} ({buildNumber})</Text>
                     </View>
                 </Animated.View>
             </View>
@@ -216,5 +216,10 @@ const styles = StyleSheet.create({
         fontSize: 18,
         color: "#4267B2",
     },
+    textContainer: {
+        flexShrink: 1,
+        width: screenWidth * 0.75 - 55 - 40, // drawerWidth - avatarWidth - paddings
+    }
+
 
 });
