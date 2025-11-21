@@ -9,7 +9,8 @@
     "start": "react-native start",
     "test": "jest",
     "clean": "cd android && ./gradlew clean && cd ..",
-    "apk": "cd android && ./gradlew assembleRelease"
+    "apk": "cd android && ./gradlew assembleRelease",
+    "aab": "cd android && ./gradlew bundleRelease"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^1.24.0",
@@ -40,7 +41,8 @@
     "react-native-swiper": "^1.6.0",
     "react-native-webview": "^13.16.0",
     "react-redux": "^9.2.0",
-    "redux-persist": "^6.0.0"
+    "redux-persist": "^6.0.0",
+    "stacktrace-parser": "^0.1.11"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
