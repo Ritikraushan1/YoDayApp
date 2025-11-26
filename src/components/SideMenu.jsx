@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
         left: 0,
         width: screenWidth,
         height: screenHeight,
-        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+        backgroundColor: 'rgba(0, 0, 0, 0.1)',
         zIndex: 100,
     },
     drawer: {
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
         bottom: 0,
         height: screenHeight,
         width: screenWidth * 0.75,
-        backgroundColor: '#4267B2', // Dark background for modern look
+        backgroundColor: '#7030A0', // Dark background for modern look
         padding: 20,
         justifyContent: 'space-between',
     },

@@ -20,7 +20,7 @@ function App() {
   return (
     <NavigationContainer theme={MyTheme}>
       <SafeAreaProvider>
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#4267B2' }} edges={['top', 'bottom']}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#7030A0' }} edges={['top', 'bottom']}>
           <Provider store={store}>
             <AppNavigator />
           </Provider>
