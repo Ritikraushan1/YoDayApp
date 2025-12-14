@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     container: {
-        backgroundColor: "#4267B2", // dark blue
+        backgroundColor: "#7030A0", // dark blue
         borderRadius: 16,
         padding: 20,
         width: "100%",
