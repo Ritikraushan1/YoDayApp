@@ -124,7 +124,7 @@ const LoginScreen = ({ navigation }) => {
 
             {/* Gradient background */}
             <LinearGradient
-                colors={['#3b5998', '#192f6a']}
+                colors={['#7030A0', '#7030A0']}
                 style={styles.background}
             >
                 {/* Content Box */}
@@ -215,7 +215,7 @@ const LoginScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#3b5998",
+        backgroundColor: "#7030A0",
     },
     background: {
         flex: 1,
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
     fbButton: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: '#4267B2',
+        backgroundColor: '#7030A0',
         paddingVertical: 14,
         paddingHorizontal: 25,
         borderRadius: 30,

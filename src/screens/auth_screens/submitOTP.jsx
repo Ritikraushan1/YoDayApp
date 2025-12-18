@@ -85,7 +85,7 @@ const SubmitOtpScreen = ({ navigation, route }) => {
     return (
         <SafeAreaView style={styles.container}>
             <LinearGradient
-                colors={['#3b5998', '#192f6a']}
+                colors={['#7030A0', '#7030A0']}
                 style={styles.background}
             >
                 <KeyboardAvoidingView
@@ -130,7 +130,7 @@ const SubmitOtpScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#3b5998",
+        backgroundColor: "#7030A0",
     },
     background: {
         flex: 1,
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#f9f9f9",
     },
     submitButton: {
-        backgroundColor: '#4267B2',
+        backgroundColor: '#7030A0',
         paddingVertical: 14,
         paddingHorizontal: 25,
         borderRadius: 30,

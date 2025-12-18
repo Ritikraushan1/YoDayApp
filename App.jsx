@@ -4,6 +4,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AppNavigator from './src/navigation/AppNavigator';
 import { Provider } from 'react-redux';
 import { store } from './src/redux/store';
+import NetworkListener from './src/utils/NetworkListener';
 
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
@@ -22,6 +23,7 @@ function App() {
       <SafeAreaProvider>
         <SafeAreaView style={{ flex: 1, backgroundColor: '#7030A0' }} edges={['top', 'bottom']}>
           <Provider store={store}>
+            <NetworkListener />
             <AppNavigator />
           </Provider>
         </SafeAreaView>

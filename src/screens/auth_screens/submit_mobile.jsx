@@ -43,7 +43,7 @@ const SubmitMobileScreen = ({ navigation }) => {
     return (
         <SafeAreaView style={styles.container}>
             <LinearGradient
-                colors={['#3b5998', '#192f6a']}
+                colors={['#7030A0', '#7030A0']}
                 style={styles.background}
             >
                 <KeyboardAvoidingView
@@ -88,7 +88,7 @@ const SubmitMobileScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#3b5998",
+        backgroundColor: "#7030A0",
     },
     background: {
         flex: 1,
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
         color: "#111",
     },
     submitButton: {
-        backgroundColor: '#4267B2',
+        backgroundColor: '#7030A0',
         paddingVertical: 14,
         paddingHorizontal: 25,
         borderRadius: 30,

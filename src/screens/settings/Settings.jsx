@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
     editButton: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "#007AFF",
+        backgroundColor: "#7030A0",
         paddingVertical: 6,
         paddingHorizontal: 14,
         borderRadius: 20,
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
     saveText: { color: "#fff", fontWeight: "500" },
     logoutContainer: { alignItems: "center", marginTop: 30 },
     logoutButton: {
-        backgroundColor: "#4267b2",
+        backgroundColor: "#7030A0",
         paddingVertical: 14,
         paddingHorizontal: 60,
         borderRadius: 25,
