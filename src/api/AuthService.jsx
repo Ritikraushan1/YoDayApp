@@ -8,11 +8,19 @@ import * as DeviceInfo from '../constants/DeviceInfoConstants';
 
 
 const getPushNotificationToken = async () => {
-    if (
-        Platform.OS === 'ios' &&
-        !messaging().isDeviceRegisteredForRemoteMessages
-    ) {
-        await messaging().registerDeviceForRemoteMessages();
+    console.log("getPushNotificationToken started");
+    try {
+        if (Platform.OS === 'ios') {
+            const isRegistered = messaging().isDeviceRegisteredForRemoteMessages;
+            console.log("isDeviceRegisteredForRemoteMessages:", isRegistered);
+            if (!isRegistered) {
+                console.log("Registering for remote messages...");
+                await messaging().registerDeviceForRemoteMessages();
+                console.log("Registered for remote messages");
+            }
+        }
+    } catch (e) {
+        console.log("Error in registerDeviceForRemoteMessages:", e);
     }
     let registrationToken = null;
     const result = await requestNotifications(['alert', 'badge', 'sound']);
@@ -26,21 +34,30 @@ const getPushNotificationToken = async () => {
 };
 
 async function registerUser(country_code, mobile_number) {
+    console.log("registerUser called", country_code, mobile_number);
     let url = Config.API_URL + YDAPI.REGISTER_USER;
-    let device_info = {
+    let device_info = {};
+    const deviceName = await DeviceInfo.DeviceName;
+    const pushToken = await getPushNotificationToken();
+
+    // Use placeholder token for iOS if Firebase initialization failed
+    const finalPushToken = pushToken || (Platform.OS === 'ios' ? 'ios_placeholder_token' : null);
+
+    device_info = {
         app_version: DeviceInfo.CurrentDeviceAppVersion,
         device_os: DeviceInfo.DevicePlatform,
         os_version: DeviceInfo.DeviceSystemVersion,
         device_model: DeviceInfo.DeviceModel,
-        device_name: await DeviceInfo.DeviceName,
-        push_token: await getPushNotificationToken(),
+        device_name: deviceName,
+        push_token: finalPushToken,
     }
+
     let logreq = {
         country_code: country_code,
         mobile_number: mobile_number,
         device_info
     };
-    console.log("register body url", url);
+    console.log("register body url", url, logreq);
 
     return new Promise((resolve, reject) => {
         axios

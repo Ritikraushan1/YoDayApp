@@ -14,8 +14,18 @@ if linkage != nil
   use_frameworks! :linkage => linkage.to_sym
 end
 
-target 'yoday' do
+target 'frontend' do
   config = use_native_modules!
+  pod 'GoogleUtilities', :modular_headers => true
+  pod 'FirebaseCore', :modular_headers => true
+  pod 'FirebaseMessaging', :modular_headers => true
+  
+  pod 'FirebaseMessaging', :modular_headers => true
+  
+  require_relative '../node_modules/react-native-permissions/scripts/setup'
+  setup_permissions([
+    'Notifications',
+  ])
 
   use_react_native!(
     :path => config[:reactNativePath],
