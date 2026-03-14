@@ -25,6 +25,8 @@ target 'frontend' do
   require_relative '../node_modules/react-native-permissions/scripts/setup'
   setup_permissions([
     'Notifications',
+    'PhotoLibrary',
+    'Camera',
   ])
 
   use_react_native!(

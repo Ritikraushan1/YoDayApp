@@ -12,7 +12,8 @@ import {
     TextInput,
     BackHandler,
     RefreshControl,
-    KeyboardAvoidingView
+    KeyboardAvoidingView,
+    Linking
 } from "react-native";
 import { useNavigationState } from "@react-navigation/native";
 import Header from "../../components/Header";
@@ -362,14 +363,36 @@ const Posts = ({ navigation }) => {
                 permissionResult = await check(PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE);
                 if (permissionResult !== RESULTS.GRANTED) {
                     permissionResult = await request(PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE);
-                    if (permissionResult !== RESULTS.GRANTED) return;
+                    if (permissionResult !== RESULTS.GRANTED) {
+                        alert("Storage access is required to attach images.");
+                        return;
+                    }
                 }
             } else if (Platform.OS === "ios") {
-                permissionResult = await check(PERMISSIONS.IOS.PHOTO_LIBRARY);
-                if (permissionResult !== RESULTS.GRANTED) {
-                    permissionResult = await request(PERMISSIONS.IOS.PHOTO_LIBRARY);
-                    if (permissionResult !== RESULTS.GRANTED) return;
+                const permission = PERMISSIONS.IOS.PHOTO_LIBRARY;
+                permissionResult = await check(permission);
+
+                if (permissionResult === RESULTS.DENIED) {
+                    permissionResult = await request(permission);
                 }
+
+                if (permissionResult === RESULTS.BLOCKED || permissionResult === RESULTS.UNAVAILABLE) {
+                    // Show alert explaining why access is needed ONLY if truly blocked
+                    Alert.alert(
+                        "Permission Needed",
+                        "This feature requires access to your photo library to attach images. Please enable it in Settings.",
+                        [
+                            { text: "Cancel", style: "cancel" },
+                            {
+                                text: "Open Settings",
+                                onPress: () => Linking.openSettings(),
+                            },
+                        ]
+                    );
+                    return;
+                }
+
+                if (permissionResult !== RESULTS.GRANTED) return;
             }
 
             // ✅ Open image picker

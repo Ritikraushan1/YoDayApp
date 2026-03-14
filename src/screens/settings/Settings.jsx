@@ -96,9 +96,6 @@ const Settings = ({ navigation }) => {
             if (result === 'granted') {
                 console.log("Permission granted after request → opening image picker");
                 openImagePicker();
-            } else {
-                console.log("Permission denied after request → showing custom alert");
-                showPermissionAlert();
             }
             return;
         }

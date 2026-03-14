@@ -35,6 +35,8 @@
 	<string>To update their address</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app requires access to your photo library to upload and share photos.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app requires access to your camera to take photos for your profile and comments.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

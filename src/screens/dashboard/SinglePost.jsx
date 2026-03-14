@@ -8,8 +8,12 @@ import {
     ScrollView,
     RefreshControl,
     Platform,
-    PermissionsAndroid
+    PermissionsAndroid,
+    Alert,
+    Linking
 } from "react-native";
+import { PERMISSIONS, RESULTS, request, check } from 'react-native-permissions';
+import { launchImageLibrary } from "react-native-image-picker";
 import Header from "../../components/Header";
 import CommentCard from "../../components/CommentCard";
 import { useSelector } from "react-redux";
@@ -77,11 +81,28 @@ const SinglePosts = ({ navigation, route }) => {
                     if (permissionResult !== RESULTS.GRANTED) return;
                 }
             } else if (Platform.OS === "ios") {
-                permissionResult = await check(PERMISSIONS.IOS.PHOTO_LIBRARY);
-                if (permissionResult !== RESULTS.GRANTED) {
-                    permissionResult = await request(PERMISSIONS.IOS.PHOTO_LIBRARY);
-                    if (permissionResult !== RESULTS.GRANTED) return;
+                const permission = PERMISSIONS.IOS.PHOTO_LIBRARY;
+                permissionResult = await check(permission);
+
+                if (permissionResult === RESULTS.DENIED) {
+                    permissionResult = await request(permission);
                 }
+
+                if (permissionResult === RESULTS.BLOCKED || permissionResult === RESULTS.UNAVAILABLE) {
+                    Alert.alert(
+                        "Permission Needed",
+                        "This feature requires access to your photo library to attach images. Please enable it in Settings.",
+                        [
+                            { text: "Cancel", style: "cancel" },
+                            {
+                                text: "Open Settings",
+                                onPress: () => Linking.openSettings(),
+                            },
+                        ]
+                    );
+                    return;
+                }
+                if (permissionResult !== RESULTS.GRANTED) return;
             }
 
             // ✅ Open image picker
