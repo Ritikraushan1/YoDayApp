@@ -29,6 +29,7 @@ import { UploadService } from "../../api/UploadService";
 import { PERMISSIONS, RESULTS, request, check } from 'react-native-permissions';
 import CommentInput from "../../components/CommentInput";
 import NetInfo from "@react-native-community/netinfo";
+import colors from "../../styles/colors";
 
 
 const { height } = Dimensions.get("window");
@@ -760,7 +761,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 28,
         borderRadius: 10,
         borderWidth: 1.5,
-        borderColor: "#ccc",
+        borderColor: colors.box_border_color,
     },
     choiceText: { fontSize: 18, color: "#444" },
     choiceContent: {

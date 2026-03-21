@@ -23,6 +23,7 @@ import CommentInput from "../../components/CommentInput";
 import SimpleHeader from "../../components/SimpleHeader";
 import { UploadService } from "../../api/UploadService";
 import AlertModal from "../../components/AlertModal";
+import colors from "../../styles/colors";
 
 const { height } = Dimensions.get("window");
 
@@ -290,6 +291,8 @@ const SinglePosts = ({ navigation, route }) => {
             setRefreshing(false);
         }
     };
+    const totalVotes =
+        (currentPost?.like_count ?? 0) + (currentPost?.dislike_count ?? 0);
 
     const formatPostDate = (dateString) => {
         const postDate = new Date(dateString);
@@ -345,7 +348,7 @@ const SinglePosts = ({ navigation, route }) => {
                                 <View style={styles.row}>
                                     <Pressable
                                         style={[styles.choiceButton, answer === "yes" && styles.selectedYes]}
-                                        onPress={() => handleAnswer(currentPost?.post_code, "like")}
+                                        onPress={() => handleAnswer(currentPost.post_code, "like")}
                                     >
                                         <Text
                                             style={[
@@ -355,12 +358,17 @@ const SinglePosts = ({ navigation, route }) => {
                                         >
                                             Yes
                                         </Text>
-                                        <Text style={styles.countText}>{currentPost?.like_count ?? 0}</Text>
+
+                                        {totalVotes > 0 && (
+                                            <Text style={styles.countText}>
+                                                {currentPost?.like_count ?? 0}
+                                            </Text>
+                                        )}
                                     </Pressable>
 
                                     <Pressable
                                         style={[styles.choiceButton, answer === "no" && styles.selectedNo]}
-                                        onPress={() => handleAnswer(currentPost?.post_code, "dislike")}
+                                        onPress={() => handleAnswer(currentPost.post_code, "dislike")}
                                     >
                                         <Text
                                             style={[
@@ -370,9 +378,12 @@ const SinglePosts = ({ navigation, route }) => {
                                         >
                                             No
                                         </Text>
-                                        <Text style={styles.countText}>
-                                            {currentPost?.dislike_count ?? 0}
-                                        </Text>
+
+                                        {totalVotes > 0 && (
+                                            <Text style={styles.countText}>
+                                                {currentPost?.dislike_count ?? 0}
+                                            </Text>
+                                        )}
                                     </Pressable>
                                 </View>
 
@@ -538,7 +549,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 28,
         borderRadius: 10,
         borderWidth: 1.5,
-        borderColor: "#ccc",
+        borderColor: colors.box_border_color,
     },
     choiceText: { fontSize: 18, color: "#444" },
     countText: { fontSize: 16, fontWeight: "500", color: "#333" },

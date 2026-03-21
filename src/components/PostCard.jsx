@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
+import colors from "../styles/colors";
 
 const PostCard = ({ currentPost, answer, handleAnswer, onPress }) => {
     const {
@@ -113,7 +114,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         borderRadius: 10,
         borderWidth: 1.5,
-        borderColor: "#ccc",
+        borderColor: colors.box_border_color,
         minWidth: 120,
         alignItems: "center",
     },
