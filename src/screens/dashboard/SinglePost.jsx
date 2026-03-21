@@ -235,29 +235,59 @@ const SinglePosts = ({ navigation, route }) => {
         try {
             let nextState = null;
 
+            // 🔍 Get current state BEFORE updating
+            const isLiked = currentPost?.likedByUser;
+            const isDisliked = currentPost?.dislikedByUser;
+
+            // ✅ Decide API call FIRST
+            if (type === "like") {
+                if (isLiked) {
+                    await PostService.removeReactionOnPost(postCode, "like"); // ❌ remove like
+                } else {
+                    await PostService.reactPost(postCode, "like"); // 👍 add like
+                }
+            } else if (type === "dislike") {
+                if (isDisliked) {
+                    await PostService.removeReactionOnPost(postCode, "dislike"); // ❌ remove dislike
+                } else {
+                    await PostService.reactPost(postCode, "dislike"); // 👎 add dislike
+                }
+            }
+
+            // ✅ Then update UI (optimistic)
             setCurrentPost((prev) => {
                 if (!prev) return prev;
                 const updated = { ...prev };
 
                 if (type === "like") {
                     if (prev.likedByUser) {
+                        // ❌ remove like
                         updated.likedByUser = false;
                         updated.like_count = Math.max(0, (prev.like_count ?? 0) - 1);
                     } else {
+                        // 👍 add like
                         updated.likedByUser = true;
                         updated.like_count = (prev.like_count ?? 0) + 1;
+
+                        // 🔄 remove dislike
                         if (prev.dislikedByUser) {
                             updated.dislikedByUser = false;
                             updated.dislike_count = Math.max(0, (prev.dislike_count ?? 0) - 1);
                         }
                     }
-                } else if (type === "dislike") {
+                }
+
+                if (type === "dislike") {
                     if (prev.dislikedByUser) {
+                        // ❌ remove dislike
                         updated.dislikedByUser = false;
                         updated.dislike_count = Math.max(0, (prev.dislike_count ?? 0) - 1);
                     } else {
+                        // 👎 add dislike
                         updated.dislikedByUser = true;
                         updated.dislike_count = (prev.dislike_count ?? 0) + 1;
+
+                        // 🔄 remove like
                         if (prev.likedByUser) {
                             updated.likedByUser = false;
                             updated.like_count = Math.max(0, (prev.like_count ?? 0) - 1);
@@ -267,17 +297,15 @@ const SinglePosts = ({ navigation, route }) => {
 
                 nextState =
                     updated.likedByUser || updated.dislikedByUser ? "reacted" : "none";
+
                 return updated;
             });
 
-            await PostService.reactPost(postCode, type);
-
-            // ⚙️ Handle transitions
+            // ⚙️ Handle UI transitions
             if (nextState === "none") {
-                // user removed reaction → back to initial
                 setShowComments(false);
             }
-            // else keep current showComments as-is
+
         } catch (err) {
             console.error("Failed to react to post", err);
         }

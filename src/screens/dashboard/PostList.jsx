@@ -60,15 +60,75 @@ const PostList = ({ navigation }) => {
     // Handle Yes/No reactions
     const handleAnswer = async (postCode, type) => {
         try {
-            const res = await PostService.reactPost(postCode, type);
-            if (res.status === 200) {
-                await getAllPosts();
+            const targetPost = posts.find(p => p.post_code === postCode);
+            if (!targetPost) return;
+
+            // ✅ Decide API call
+            if (type === "like") {
+                if (targetPost.likedByUser) {
+                    await PostService.removeReactionOnPost(postCode, "like"); // remove like
+                } else {
+                    await PostService.reactPost(postCode, "like"); // add like
+                }
+            } else if (type === "dislike") {
+                if (targetPost.dislikedByUser) {
+                    await PostService.removeReactionOnPost(postCode, "dislike"); // remove dislike
+                } else {
+                    await PostService.reactPost(postCode, "dislike"); // add dislike
+                }
             }
+
+            // ✅ Update UI (Optimistic or refetch)
+            setPosts(prevPosts =>
+                prevPosts.map(post => {
+                    if (post.post_code !== postCode) return post;
+
+                    const updatedPost = { ...post };
+
+                    if (type === "like") {
+                        if (post.likedByUser) {
+                            // ❌ remove like
+                            updatedPost.likedByUser = false;
+                            updatedPost.like_count = Math.max(0, (post.like_count ?? 0) - 1);
+                        } else {
+                            // 👍 add like
+                            updatedPost.likedByUser = true;
+                            updatedPost.like_count = (post.like_count ?? 0) + 1;
+
+                            // 🔄 remove dislike if exists
+                            if (post.dislikedByUser) {
+                                updatedPost.dislikedByUser = false;
+                                updatedPost.dislike_count = Math.max(0, (post.dislike_count ?? 0) - 1);
+                            }
+                        }
+                    }
+
+                    if (type === "dislike") {
+                        if (post.dislikedByUser) {
+                            // ❌ remove dislike
+                            updatedPost.dislikedByUser = false;
+                            updatedPost.dislike_count = Math.max(0, (post.dislike_count ?? 0) - 1);
+                        } else {
+                            // 👎 add dislike
+                            updatedPost.dislikedByUser = true;
+                            updatedPost.dislike_count = (post.dislike_count ?? 0) + 1;
+
+                            // 🔄 remove like if exists
+                            if (post.likedByUser) {
+                                updatedPost.likedByUser = false;
+                                updatedPost.like_count = Math.max(0, (post.like_count ?? 0) - 1);
+                            }
+                        }
+                    }
+
+                    return updatedPost;
+                })
+            );
+
         } catch (error) {
             console.error("Failed to react to post", error);
         }
     };
-
     // Navigate to single post screen
     const onPressPostCard = (post) => {
         navigation.navigate("SinglePost", { post });

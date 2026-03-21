@@ -256,6 +256,38 @@ const Posts = ({ navigation }) => {
 
     const handleAnswer = async (postCode, type) => {
         try {
+            const post = posts.find(p => p.post_code === postCode);
+            if (!post) return;
+
+            // ✅ If same reaction clicked again → REMOVE reaction
+            if (
+                (type === "like" && post.likedByUser) ||
+                (type === "dislike" && post.dislikedByUser)
+            ) {
+                await handleRemoveReaction(postCode, type);
+
+                setPosts(prevPosts =>
+                    prevPosts.map(p => {
+                        if (p.post_code !== postCode) return p;
+
+                        const updatedPost = { ...p };
+
+                        if (type === "like") {
+                            updatedPost.likedByUser = false;
+                            updatedPost.like_count = Math.max(0, (p.like_count ?? 0) - 1);
+                        } else {
+                            updatedPost.dislikedByUser = false;
+                            updatedPost.dislike_count = Math.max(0, (p.dislike_count ?? 0) - 1);
+                        }
+
+                        return updatedPost;
+                    })
+                );
+
+                return; // 🚀 stop here
+            }
+
+            // ✅ Otherwise → normal API call (switch or new reaction)
             const res = await PostService.reactPost(postCode, type);
 
             if (res.status === 200) {
@@ -266,54 +298,29 @@ const Posts = ({ navigation }) => {
                         const updatedPost = { ...post };
 
                         if (type === "like") {
-                            if (post.likedByUser) {
-                                // undo like
-                                updatedPost.likedByUser = false;
-                                updatedPost.like_count = Math.max(0, (post.like_count ?? 0) - 1);
-                            } else {
-                                // add like (and remove dislike if present)
-                                updatedPost.likedByUser = true;
-                                updatedPost.like_count = (post.like_count ?? 0) + 1;
-                                if (post.dislikedByUser) {
-                                    updatedPost.dislikedByUser = false;
-                                    updatedPost.dislike_count = Math.max(0, (post.dislike_count ?? 0) - 1);
-                                }
-                            }
-                        } else if (type === "dislike") {
+                            updatedPost.likedByUser = true;
+                            updatedPost.like_count = (post.like_count ?? 0) + 1;
+
                             if (post.dislikedByUser) {
-                                // undo dislike
                                 updatedPost.dislikedByUser = false;
                                 updatedPost.dislike_count = Math.max(0, (post.dislike_count ?? 0) - 1);
-                            } else {
-                                // add dislike (and remove like if present)
-                                updatedPost.dislikedByUser = true;
-                                updatedPost.dislike_count = (post.dislike_count ?? 0) + 1;
-                                if (post.likedByUser) {
-                                    updatedPost.likedByUser = false;
-                                    updatedPost.like_count = Math.max(0, (post.like_count ?? 0) - 1);
-                                }
+                            }
+                        } else {
+                            updatedPost.dislikedByUser = true;
+                            updatedPost.dislike_count = (post.dislike_count ?? 0) + 1;
+
+                            if (post.likedByUser) {
+                                updatedPost.likedByUser = false;
+                                updatedPost.like_count = Math.max(0, (post.like_count ?? 0) - 1);
                             }
                         }
 
                         return updatedPost;
                     });
 
-                    // Re-sync currentPost with updatedPosts
                     const updatedCurrent = updatedPosts.find(p => p.post_code === currentPost?.post_code) || null;
                     setCurrentPost(updatedCurrent);
 
-                    // If the user just removed their reaction (no likedByUser & no dislikedByUser) while comments were visible,
-                    // hide comments and clear comments list (this returns to initial mode)
-                    if (showComments && updatedCurrent && !updatedCurrent.likedByUser && !updatedCurrent.dislikedByUser) {
-                        setShowComments(false);
-                        setComments([]);
-                    }
-
-                    // If the user just added a reaction and comments are not visible, keep comments hidden
-                    // (Comments button will be visible from render when answer exists)
-                    // If the user toggles reaction while not viewing comments, nothing else needed.
-
-                    // Also update like/dislike counts shown in UI
                     if (updatedCurrent) {
                         setLikeCount(updatedCurrent.like_count ?? 0);
                         setDislikedCount(updatedCurrent.dislike_count ?? 0);
@@ -327,6 +334,13 @@ const Posts = ({ navigation }) => {
         }
     };
 
+    const handleRemoveReaction = async (postCode, type) => {
+        try {
+            return await PostService.removeReactionOnPost(postCode, type);
+        } catch (error) {
+            console.error("Failed to remove reaction", error);
+        }
+    };
     const handlePreviousPost = () => {
         navigation.navigate("PostList");
         if (currentIndex < posts.length - 1) {

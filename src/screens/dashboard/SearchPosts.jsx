@@ -28,7 +28,14 @@ const SearchPostsScreen = ({ navigation }) => {
         setLoading(true);
         try {
             const res = await PostService.getPostBySearchQuery(searchText);
-            setResults(res?.data?.posts || []);
+
+            const postsWithReactions = (res?.data?.posts || []).map(post => ({
+                ...post,
+                likedByUser: post.liked_by_you ?? false,
+                dislikedByUser: post.disliked_by_you ?? false,
+            }));
+
+            setResults(postsWithReactions);
         } catch (error) {
             console.error("Search error:", error);
         } finally {
@@ -51,11 +58,71 @@ const SearchPostsScreen = ({ navigation }) => {
 
     const handleAnswer = async (postCode, type) => {
         try {
-            const res = await PostService.reactPost(postCode, type);
+            const targetPost = results.find(p => p.post_code === postCode);
+            if (!targetPost) return;
 
-            if (res.status === 200) {
-                await getSearchedPosts(query)
+            // ✅ Decide API
+            if (type === "like") {
+                if (targetPost.likedByUser) {
+                    await PostService.removeReactionOnPost(postCode, "like");
+                } else {
+                    await PostService.reactPost(postCode, "like");
+                }
+            } else if (type === "dislike") {
+                if (targetPost.dislikedByUser) {
+                    await PostService.removeReactionOnPost(postCode, "dislike");
+                } else {
+                    await PostService.reactPost(postCode, "dislike");
+                }
             }
+
+            // ✅ Optimistic UI update (no refetch needed)
+            setResults(prev =>
+                prev.map(post => {
+                    if (post.post_code !== postCode) return post;
+
+                    const updatedPost = { ...post };
+
+                    if (type === "like") {
+                        if (post.likedByUser) {
+                            // ❌ remove like
+                            updatedPost.likedByUser = false;
+                            updatedPost.like_count = Math.max(0, (post.like_count ?? 0) - 1);
+                        } else {
+                            // 👍 add like
+                            updatedPost.likedByUser = true;
+                            updatedPost.like_count = (post.like_count ?? 0) + 1;
+
+                            // 🔄 remove dislike
+                            if (post.dislikedByUser) {
+                                updatedPost.dislikedByUser = false;
+                                updatedPost.dislike_count = Math.max(0, (post.dislike_count ?? 0) - 1);
+                            }
+                        }
+                    }
+
+                    if (type === "dislike") {
+                        if (post.dislikedByUser) {
+                            // ❌ remove dislike
+                            updatedPost.dislikedByUser = false;
+                            updatedPost.dislike_count = Math.max(0, (post.dislike_count ?? 0) - 1);
+                        } else {
+                            // 👎 add dislike
+                            updatedPost.dislikedByUser = true;
+                            updatedPost.dislike_count = (post.dislike_count ?? 0) + 1;
+
+                            // 🔄 remove like
+                            if (post.likedByUser) {
+                                updatedPost.likedByUser = false;
+                                updatedPost.like_count = Math.max(0, (post.like_count ?? 0) - 1);
+                            }
+                        }
+                    }
+
+                    return updatedPost;
+                })
+            );
+
         } catch (error) {
             console.error("Failed to react to post", error);
         }
@@ -94,7 +161,13 @@ const SearchPostsScreen = ({ navigation }) => {
                     renderItem={({ item }) => (
                         <PostCard
                             currentPost={item}
-                            answer={answerMap[item.id]}
+                            answer={
+                                item.likedByUser
+                                    ? "yes"
+                                    : item.dislikedByUser
+                                        ? "no"
+                                        : null
+                            }
                             handleAnswer={handleAnswer}
                             onPress={() => onPressPostCard(item)}
                         />

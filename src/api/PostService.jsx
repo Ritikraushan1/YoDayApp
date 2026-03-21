@@ -162,8 +162,70 @@ async function reactPost(postId, type) {
     });
 }
 
+async function removeReactionOnPost(postId, type) {
+    let url = Config.API_URL + YDAPI.GET_ALL_POSTS + '/' + postId + YDAPI.POST_REACT;
+
+    const user = await UserService.getUserInformation();
+    let tokenval = user?.token;
+
+    let headers = {
+        Authorization: `Bearer ${tokenval}`
+    };
+
+    let body = {
+        type: type
+    };
+
+    console.log("url", url, body);
+
+    return new Promise((resolve, reject) => {
+        axios
+            .delete(url, {
+                headers: headers,
+                data: body // ✅ CORRECT
+            })
+            .then(response => {
+                let result = '';
+
+                switch (response.status) {
+                    case 200:
+                        result = {
+                            status: response.status,
+                            data: response.data,
+                        };
+                        break;
+                    case 400:
+                        result = {
+                            status: response.status,
+                            message: response.data.message,
+                        };
+                        break;
+                    case 500:
+                        result = {
+                            status: response.status,
+                            message: 'Server Error',
+                        };
+                        break;
+                    default:
+                        result = {
+                            status: response.status,
+                            message: 'unhandled',
+                        };
+                        break;
+                }
+
+                resolve(result);
+            })
+            .catch(err => {
+                console.log("error", err);
+                reject(err);
+            });
+    });
+}
+
 export const PostService = {
     getAllPosts,
     reactPost,
-    getPostBySearchQuery
+    getPostBySearchQuery,
+    removeReactionOnPost
 }
