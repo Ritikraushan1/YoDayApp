@@ -1,6 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { combineReducers } from 'redux';
 import userReducer from './slices/userSlice';
+import postsReducer from './slices/postsSlice';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { persistStore, persistReducer } from 'redux-persist';
@@ -9,12 +10,13 @@ import { persistStore, persistReducer } from 'redux-persist';
 const persistConfig = {
     key: 'root',            // storage key
     storage: AsyncStorage,  // use AsyncStorage in React Native
-    whitelist: ['user'],    // which slice(s) to persist
+    whitelist: ['user', 'posts'],    // which slice(s) to persist
 };
 
 // 2️⃣ Combine reducers (in case you have more slices)
 const rootReducer = combineReducers({
     user: userReducer,
+    posts: postsReducer,
 });
 
 // 3️⃣ Wrap reducer with persistReducer

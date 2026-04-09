@@ -11,17 +11,18 @@ import {
 import PostCard from "../../components/PostCard";
 import { BackIcon } from "../../assets/icon/MenuIcons";
 import { PostService } from "../../api/PostService";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { setPosts, updatePostReaction } from "../../redux/slices/postsSlice";
 import CustomDropDown from "../../components/CustomDropDown"; // assuming you have this component
 
 const PostList = ({ navigation }) => {
     const user = useSelector(state => state.user.userInfo);
 
     const [loading, setLoading] = useState(false);
-    const [posts, setPosts] = useState([]);
-    const [filteredPosts, setFilteredPosts] = useState([]);
     const [filter, setFilter] = useState(""); // "Liked" or "Disliked"
-    const [answerMap, setAnswerMap] = useState({});
+    const dispatch = useDispatch();
+    const posts = useSelector((state) => state.posts.posts);
+    const [filteredPosts, setFilteredPosts] = useState([]);
 
     // Fetch all posts
     const getAllPosts = async () => {
@@ -33,7 +34,7 @@ const PostList = ({ navigation }) => {
                 likedByUser: post.liked_by_you ?? false,
                 dislikedByUser: post.disliked_by_you ?? false,
             }));
-            setPosts(postsWithUserReactions);
+            dispatch(setPosts(postsWithUserReactions));
             setFilteredPosts(postsWithUserReactions); // default: show all
         } catch (error) {
             console.error("Failed to fetch posts:", error);
@@ -78,52 +79,13 @@ const PostList = ({ navigation }) => {
                 }
             }
 
-            // ✅ Update UI (Optimistic or refetch)
-            setPosts(prevPosts =>
-                prevPosts.map(post => {
-                    if (post.post_code !== postCode) return post;
-
-                    const updatedPost = { ...post };
-
-                    if (type === "like") {
-                        if (post.likedByUser) {
-                            // ❌ remove like
-                            updatedPost.likedByUser = false;
-                            updatedPost.like_count = Math.max(0, (post.like_count ?? 0) - 1);
-                        } else {
-                            // 👍 add like
-                            updatedPost.likedByUser = true;
-                            updatedPost.like_count = (post.like_count ?? 0) + 1;
-
-                            // 🔄 remove dislike if exists
-                            if (post.dislikedByUser) {
-                                updatedPost.dislikedByUser = false;
-                                updatedPost.dislike_count = Math.max(0, (post.dislike_count ?? 0) - 1);
-                            }
-                        }
-                    }
-
-                    if (type === "dislike") {
-                        if (post.dislikedByUser) {
-                            // ❌ remove dislike
-                            updatedPost.dislikedByUser = false;
-                            updatedPost.dislike_count = Math.max(0, (post.dislike_count ?? 0) - 1);
-                        } else {
-                            // 👎 add dislike
-                            updatedPost.dislikedByUser = true;
-                            updatedPost.dislike_count = (post.dislike_count ?? 0) + 1;
-
-                            // 🔄 remove like if exists
-                            if (post.likedByUser) {
-                                updatedPost.likedByUser = false;
-                                updatedPost.like_count = Math.max(0, (post.like_count ?? 0) - 1);
-                            }
-                        }
-                    }
-
-                    return updatedPost;
-                })
-            );
+            // ✅ Dispatch to Redux (handles optimistic update globally)
+            dispatch(updatePostReaction({
+                postCode,
+                type,
+                isLiked: type === "like" && !targetPost.likedByUser,
+                isDisliked: type === "dislike" && !targetPost.dislikedByUser
+            }));
 
         } catch (error) {
             console.error("Failed to react to post", error);
@@ -167,7 +129,13 @@ const PostList = ({ navigation }) => {
                     renderItem={({ item }) => (
                         <PostCard
                             currentPost={item}
-                            answer={answerMap[item.post_code]}
+                            answer={
+                                item.likedByUser
+                                    ? "yes"
+                                    : item.dislikedByUser
+                                        ? "no"
+                                        : null
+                            }
                             handleAnswer={handleAnswer}
                             onPress={() => onPressPostCard(item)}
                         />

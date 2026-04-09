@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     View,
     Text,
@@ -16,7 +16,8 @@ import { PERMISSIONS, RESULTS, request, check } from 'react-native-permissions';
 import { launchImageLibrary } from "react-native-image-picker";
 import Header from "../../components/Header";
 import CommentCard from "../../components/CommentCard";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { updatePostReaction } from "../../redux/slices/postsSlice";
 import { PostService } from "../../api/PostService";
 import { CommentsService } from "../../api/CommentService";
 import CommentInput from "../../components/CommentInput";
@@ -33,7 +34,26 @@ const SinglePosts = ({ navigation, route }) => {
     const [comments, setComments] = useState([]);
     const [refreshing, setRefreshing] = useState(false);
     const [showComments, setShowComments] = useState(false);
-    const [currentPost, setCurrentPost] = useState(route.params.post);
+    const dispatch = useDispatch();
+    const postCode = route.params.post?.post_code;
+    
+    // Select the post from global store (either from feed or search)
+    const globalPosts = useSelector(state => state.posts.posts);
+    const globalSearchResults = useSelector(state => state.posts.searchResults);
+    
+    const currentPostFromRedux = 
+        globalPosts.find(p => p.post_code === postCode) || 
+        globalSearchResults.find(p => p.post_code === postCode) || 
+        route.params.post;
+
+    const [currentPost, setCurrentPost] = useState(currentPostFromRedux);
+
+    // Keep local currentPost in sync with Redux if it changes elsewhere
+    useEffect(() => {
+        if (currentPostFromRedux) {
+            setCurrentPost(currentPostFromRedux);
+        }
+    }, [currentPostFromRedux]);
     const [customAlert, setCustomAlert] = useState({
         visible: false,
         message: "",
@@ -59,16 +79,15 @@ const SinglePosts = ({ navigation, route }) => {
             console.error("Failed to load comments", err);
         }
     };
+
     const handleLike = async (comment) => {
         await handleReact(comment, "like");
     };
 
-
     const handleReply = async (id, replyText, image) => {
         const res = await CommentsService.addNewReplyToComments(currentPost?.post_code, replyText, id, image);
         console.log("res after getting comments", res);
-        await getCommentsForPost()
-
+        await getCommentsForPost();
     };
 
     const handleAttachCommentImage = async () => {
@@ -156,13 +175,13 @@ const SinglePosts = ({ navigation, route }) => {
             message: "Are you sure want to delete comment?",
             onOk: async () => {
                 setCustomAlert({ visible: false });
-                await deleteComments(comment)
+                await deleteComments(comment);
             },
             onCancel: () => {
                 setCustomAlert({ visible: false });
             }
-        })
-    }
+        });
+    };
 
     // 🔹 Handle Reactions (like, love, haha, etc.)
     const handleReact = async (comment, reactionType) => {
@@ -203,7 +222,6 @@ const SinglePosts = ({ navigation, route }) => {
         }
     };
 
-
     const handleSendComment = async (text, image) => {
         if (!text && !image) return;
         try {
@@ -233,78 +251,31 @@ const SinglePosts = ({ navigation, route }) => {
 
     const handleAnswer = async (postCode, type) => {
         try {
-            let nextState = null;
+            // ✅ If same reaction clicked again → REMOVE reaction
+            if (
+                (type === "like" && currentPost?.likedByUser) ||
+                (type === "dislike" && currentPost?.dislikedByUser)
+            ) {
+                dispatch(updatePostReaction({
+                    postCode,
+                    type,
+                    isLiked: false,
+                    isDisliked: false
+                }));
 
-            // 🔍 Get current state BEFORE updating
-            const isLiked = currentPost?.likedByUser;
-            const isDisliked = currentPost?.dislikedByUser;
-
-            // ✅ Decide API call FIRST
-            if (type === "like") {
-                if (isLiked) {
-                    await PostService.removeReactionOnPost(postCode, "like"); // ❌ remove like
-                } else {
-                    await PostService.reactPost(postCode, "like"); // 👍 add like
-                }
-            } else if (type === "dislike") {
-                if (isDisliked) {
-                    await PostService.removeReactionOnPost(postCode, "dislike"); // ❌ remove dislike
-                } else {
-                    await PostService.reactPost(postCode, "dislike"); // 👎 add dislike
-                }
+                return; // 🚀 stop here
             }
 
-            // ✅ Then update UI (optimistic)
-            setCurrentPost((prev) => {
-                if (!prev) return prev;
-                const updated = { ...prev };
+            // ✅ Otherwise → normal API call (switch or new reaction)
+            await PostService.reactPost(postCode, type);
 
-                if (type === "like") {
-                    if (prev.likedByUser) {
-                        // ❌ remove like
-                        updated.likedByUser = false;
-                        updated.like_count = Math.max(0, (prev.like_count ?? 0) - 1);
-                    } else {
-                        // 👍 add like
-                        updated.likedByUser = true;
-                        updated.like_count = (prev.like_count ?? 0) + 1;
-
-                        // 🔄 remove dislike
-                        if (prev.dislikedByUser) {
-                            updated.dislikedByUser = false;
-                            updated.dislike_count = Math.max(0, (prev.dislike_count ?? 0) - 1);
-                        }
-                    }
-                }
-
-                if (type === "dislike") {
-                    if (prev.dislikedByUser) {
-                        // ❌ remove dislike
-                        updated.dislikedByUser = false;
-                        updated.dislike_count = Math.max(0, (prev.dislike_count ?? 0) - 1);
-                    } else {
-                        // 👎 add dislike
-                        updated.dislikedByUser = true;
-                        updated.dislike_count = (prev.dislike_count ?? 0) + 1;
-
-                        // 🔄 remove like
-                        if (prev.likedByUser) {
-                            updated.likedByUser = false;
-                            updated.like_count = Math.max(0, (prev.like_count ?? 0) - 1);
-                        }
-                    }
-                }
-
-                nextState =
-                    updated.likedByUser || updated.dislikedByUser ? "reacted" : "none";
-
-                return updated;
-            });
-
-            // ⚙️ Handle UI transitions
-            if (nextState === "none") {
-                setShowComments(false);
-            }
+            // ✅ Then update Redux (handles optimistic update)
+            dispatch(updatePostReaction({
+                postCode,
+                type,
+                isLiked: type === "like",
+                isDisliked: type === "dislike"
+            }));
 
         } catch (err) {
             console.error("Failed to react to post", err);
@@ -319,8 +290,6 @@ const SinglePosts = ({ navigation, route }) => {
             setRefreshing(false);
         }
     };
-    const totalVotes =
-        (currentPost?.like_count ?? 0) + (currentPost?.dislike_count ?? 0);
 
     const formatPostDate = (dateString) => {
         const postDate = new Date(dateString);
@@ -376,60 +345,43 @@ const SinglePosts = ({ navigation, route }) => {
                                 <View style={styles.row}>
                                     <Pressable
                                         style={[styles.choiceButton, answer === "yes" && styles.selectedYes]}
-                                        onPress={() => handleAnswer(currentPost.post_code, "like")}
+                                        onPress={() => handleAnswer(currentPost?.post_code, "like")}
                                     >
-                                        <Text
-                                            style={[
-                                                styles.choiceText,
-                                                answer === "yes" && styles.choiceTextSelected,
-                                            ]}
-                                        >
-                                            Yes
-                                        </Text>
-
-                                        {totalVotes > 0 && (
-                                            <Text style={styles.countText}>
-                                                {currentPost?.like_count ?? 0}
+                                        <View style={styles.choiceContent}>
+                                            <Text style={[styles.choiceText, answer === "yes" && styles.choiceTextSelected]}>
+                                                YES
                                             </Text>
-                                        )}
+                                            {answer && currentPost?.like_count > 0 && (
+                                                <Text style={styles.countText}>{currentPost?.like_count}</Text>
+                                            )}
+                                        </View>
                                     </Pressable>
 
                                     <Pressable
                                         style={[styles.choiceButton, answer === "no" && styles.selectedNo]}
-                                        onPress={() => handleAnswer(currentPost.post_code, "dislike")}
+                                        onPress={() => handleAnswer(currentPost?.post_code, "dislike")}
                                     >
-                                        <Text
-                                            style={[
-                                                styles.choiceText,
-                                                answer === "no" && styles.choiceTextSelected,
-                                            ]}
-                                        >
-                                            No
-                                        </Text>
-
-                                        {totalVotes > 0 && (
-                                            <Text style={styles.countText}>
-                                                {currentPost?.dislike_count ?? 0}
+                                        <View style={styles.choiceContent}>
+                                            <Text style={[styles.choiceText, answer === "no" && styles.choiceTextSelected]}>
+                                                NO
                                             </Text>
-                                        )}
+                                            {answer && currentPost?.dislike_count > 0 && (
+                                                <Text style={styles.countText}>{currentPost?.dislike_count}</Text>
+                                            )}
+                                        </View>
                                     </Pressable>
                                 </View>
 
                                 {answer && (
-                                    <Pressable
-                                        style={styles.commentButton}
-                                        onPress={async () => {
-                                            await getCommentsForPost();
-                                            setShowComments(true);
-                                        }}
-                                    >
+                                    <Pressable style={styles.commentButton} onPress={async () => {
+                                        setShowComments(true);
+                                        await getCommentsForPost();  // ✅ Fetch comments here
+                                    }}>
                                         <Text style={styles.commentText}>Comments</Text>
                                     </Pressable>
                                 )}
                             </View>
                         </View>
-
-
                     </View>
                 ) : (
                     // 🟣 COMMENT MODE
@@ -443,38 +395,37 @@ const SinglePosts = ({ navigation, route }) => {
                                         style={[styles.choiceButton, answer === "yes" && styles.selectedYes]}
                                         onPress={() => handleAnswer(currentPost.post_code, "like")}
                                     >
-                                        <Text
-                                            style={[
-                                                styles.choiceText,
-                                                answer === "yes" && styles.choiceTextSelected,
-                                            ]}
-                                        >
-                                            Yes
-                                        </Text>
-                                        <Text style={styles.countText}>{currentPost?.like_count ?? 0}</Text>
+                                        <View style={styles.choiceContent}>
+                                            <Text style={[styles.choiceText, answer === "yes" && styles.choiceTextSelected]}>
+                                                YES
+                                            </Text>
+                                            {answer && currentPost?.like_count > 0 && (
+                                                <Text style={styles.countText}>{currentPost?.like_count}</Text>
+                                            )}
+                                        </View>
                                     </Pressable>
 
                                     <Pressable
                                         style={[styles.choiceButton, answer === "no" && styles.selectedNo]}
                                         onPress={() => handleAnswer(currentPost.post_code, "dislike")}
                                     >
-                                        <Text
-                                            style={[
-                                                styles.choiceText,
-                                                answer === "no" && styles.choiceTextSelected,
-                                            ]}
-                                        >
-                                            No
-                                        </Text>
-                                        <Text style={styles.countText}>
-                                            {currentPost?.dislike_count ?? 0}
-                                        </Text>
+                                        <View style={styles.choiceContent}>
+                                            <Text style={[styles.choiceText, answer === "no" && styles.choiceTextSelected]}>
+                                                NO
+                                            </Text>
+                                            {answer && currentPost?.dislike_count > 0 && (
+                                                <Text style={styles.countText}>{currentPost?.dislike_count}</Text>
+                                            )}
+                                        </View>
                                     </Pressable>
                                 </View>
 
                                 <Pressable
                                     style={styles.commentButton}
-                                    onPress={() => setShowComments(false)}
+                                    onPress={() => {
+                                        setComments([]);
+                                        setShowComments(false);
+                                    }}
                                 >
                                     <Text style={styles.commentText}>Hide Comments</Text>
                                 </Pressable>
@@ -578,11 +529,17 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         borderWidth: 1.5,
         borderColor: colors.box_border_color,
+        backgroundColor: "transparent", // ✅ No background by default
     },
     choiceText: { fontSize: 18, color: "#444" },
+    choiceContent: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8, // space between text and count
+    },
     countText: { fontSize: 16, fontWeight: "500", color: "#333" },
     selectedYes: { backgroundColor: "#d4edda", borderColor: "#28a745" },
-    selectedNo: { backgroundColor: "#f8d7da", borderColor: "#dc3545" },
+    selectedNo: { backgroundColor: "#f8d7da", borderColor: "#7030A0" },
     choiceTextSelected: { fontWeight: "600" },
     commentButton: {
         backgroundColor: "#E9ECEF",

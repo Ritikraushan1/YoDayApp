@@ -20,7 +20,8 @@ import Header from "../../components/Header";
 import CommentCard from "../../components/CommentCard";
 import AlertModal from "../../components/AlertModal";
 import { PostService } from "../../api/PostService";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { setPosts, updatePostReaction } from "../../redux/slices/postsSlice";
 import { CommentsService } from "../../api/CommentService";
 import { useFocusEffect } from "@react-navigation/native";
 import DesignedLoader from "../../components/DesignedLoader";
@@ -42,14 +43,14 @@ const Posts = ({ navigation }) => {
     const [refreshing, setRefreshing] = useState(false);
 
     const [searchText, setSearchText] = useState("");
-    const [likedPosts, setLikedPosts] = useState({});
     const [currentIndex, setCurrentIndex] = useState(0);
     const [showComments, setShowComments] = useState(false);
-    const [showModal, setShowModal] = useState(false);
-    const [currentPost, setCurrentPost] = useState(null);
-    const [likeCount, setLikeCount] = useState(0);
-    const [dislikeCount, setDislikedCount] = useState(0);
     const [newComment, setNewComment] = useState("");
+    const dispatch = useDispatch();
+    const posts = useSelector((state) => state.posts.posts);
+    const currentPost = posts[currentIndex] || null;
+    const likeCount = currentPost?.like_count ?? 0;
+    const dislikeCount = currentPost?.dislike_count ?? 0;
     const [newCommentImage, setNewCommentImage] = useState(null);
     const [customAlert, setCustomAlert] = useState({
         visible: false,
@@ -59,7 +60,6 @@ const Posts = ({ navigation }) => {
         showCancel: true,
     });
     const [comments, setComments] = useState([]);
-    const [posts, setPosts] = useState([]);
     const [isConnected, setIsConnected] = useState(true);
 
     useEffect(() => {
@@ -122,18 +122,7 @@ const Posts = ({ navigation }) => {
 
 
 
-    useEffect(() => {
-        if (posts.length > 0 && currentIndex < posts.length) {
-            const updatedPost = posts[currentIndex];
-            setCurrentPost(updatedPost);
-            setLikeCount(updatedPost.like_count ?? 0);
-            setDislikedCount(updatedPost.dislike_count ?? 0);
-        } else {
-            setCurrentPost(null);
-            setLikeCount(0);
-            setDislikedCount(0);
-        }
-    }, [posts, currentIndex]);
+// REMOVED useEffect for currentPost, it's now derived directly from posts[currentIndex]
 
     useFocusEffect(
         React.useCallback(() => {
@@ -199,7 +188,7 @@ const Posts = ({ navigation }) => {
                 likedByUser: post.liked_by_you ?? false,
                 dislikedByUser: post.disliked_by_you ?? false,
             }));
-            setPosts(postsWithUserReactions);
+            dispatch(setPosts(postsWithUserReactions));
             setCurrentIndex(0); // reset to first post
         } catch (error) {
             console.error(error);
@@ -266,23 +255,12 @@ const Posts = ({ navigation }) => {
             ) {
                 await handleRemoveReaction(postCode, type);
 
-                setPosts(prevPosts =>
-                    prevPosts.map(p => {
-                        if (p.post_code !== postCode) return p;
-
-                        const updatedPost = { ...p };
-
-                        if (type === "like") {
-                            updatedPost.likedByUser = false;
-                            updatedPost.like_count = Math.max(0, (p.like_count ?? 0) - 1);
-                        } else {
-                            updatedPost.dislikedByUser = false;
-                            updatedPost.dislike_count = Math.max(0, (p.dislike_count ?? 0) - 1);
-                        }
-
-                        return updatedPost;
-                    })
-                );
+                dispatch(updatePostReaction({
+                    postCode,
+                    type,
+                    isLiked: false,
+                    isDisliked: false
+                }));
 
                 return; // 🚀 stop here
             }
@@ -291,43 +269,12 @@ const Posts = ({ navigation }) => {
             const res = await PostService.reactPost(postCode, type);
 
             if (res.status === 200) {
-                setPosts((prevPosts) => {
-                    const updatedPosts = prevPosts.map((post) => {
-                        if (post.post_code !== postCode) return post;
-
-                        const updatedPost = { ...post };
-
-                        if (type === "like") {
-                            updatedPost.likedByUser = true;
-                            updatedPost.like_count = (post.like_count ?? 0) + 1;
-
-                            if (post.dislikedByUser) {
-                                updatedPost.dislikedByUser = false;
-                                updatedPost.dislike_count = Math.max(0, (post.dislike_count ?? 0) - 1);
-                            }
-                        } else {
-                            updatedPost.dislikedByUser = true;
-                            updatedPost.dislike_count = (post.dislike_count ?? 0) + 1;
-
-                            if (post.likedByUser) {
-                                updatedPost.likedByUser = false;
-                                updatedPost.like_count = Math.max(0, (post.like_count ?? 0) - 1);
-                            }
-                        }
-
-                        return updatedPost;
-                    });
-
-                    const updatedCurrent = updatedPosts.find(p => p.post_code === currentPost?.post_code) || null;
-                    setCurrentPost(updatedCurrent);
-
-                    if (updatedCurrent) {
-                        setLikeCount(updatedCurrent.like_count ?? 0);
-                        setDislikedCount(updatedCurrent.dislike_count ?? 0);
-                    }
-
-                    return updatedPosts;
-                });
+                dispatch(updatePostReaction({
+                    postCode,
+                    type,
+                    isLiked: type === "like",
+                    isDisliked: type === "dislike"
+                }));
             }
         } catch (error) {
             console.error("Failed to react to post", error);
@@ -538,9 +485,9 @@ const Posts = ({ navigation }) => {
                                         >
                                             <View style={styles.choiceContent}>
                                                 <Text style={[styles.choiceText, answer === "yes" && styles.choiceTextSelected]}>
-                                                    Yes
+                                                    YES
                                                 </Text>
-                                                {answer && <Text style={styles.countText}>{likeCount}</Text>}
+                                                {answer && likeCount > 0 && <Text style={styles.countText}>{likeCount}</Text>}
                                             </View>
                                         </Pressable>
 
@@ -550,9 +497,9 @@ const Posts = ({ navigation }) => {
                                         >
                                             <View style={styles.choiceContent}>
                                                 <Text style={[styles.choiceText, answer === "no" && styles.choiceTextSelected]}>
-                                                    No
+                                                    NO
                                                 </Text>
-                                                {answer && <Text style={styles.countText}>{dislikeCount}</Text>}
+                                                {answer && dislikeCount > 0 && <Text style={styles.countText}>{dislikeCount}</Text>}
                                             </View>
                                         </Pressable>
                                     </View>
@@ -605,7 +552,7 @@ const Posts = ({ navigation }) => {
                                             onPress={() => handleAnswer(currentPost.post_code, "like")}
                                         >
                                             <Text style={[styles.choiceText, answer === "yes" && styles.choiceTextSelected]}>Yes</Text>
-                                            {answer && (
+                                            {answer && likeCount > 0 && (
                                                 <Text style={styles.countText}>
                                                     {likeCount}
                                                 </Text>
@@ -617,7 +564,7 @@ const Posts = ({ navigation }) => {
                                             onPress={() => handleAnswer(currentPost.post_code, "dislike")}
                                         >
                                             <Text style={[styles.choiceText, answer === "no" && styles.choiceTextSelected]}>No</Text>
-                                            {answer && (
+                                            {answer && dislikeCount > 0 && (
                                                 <Text style={styles.countText}>
                                                     {dislikeCount}
                                                 </Text>

@@ -6,6 +6,7 @@ import {
     StyleSheet,
     StatusBar,
     Dimensions,
+    Platform,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -134,15 +135,16 @@ const LoginScreen = ({ navigation }) => {
 
                     {/* Facebook Login Button */}
                     <View style={{ gap: 8 }}>
-
-                        {/* <TouchableOpacity
-                            style={styles.fbButton}
-                            activeOpacity={0.85}
-                            onPress={handleFacebookSignIn}
-                        >
-                            <FacebookIcon width={22} height={22} />
-                            <Text style={styles.fbButtonText}>Continue with Facebook</Text>
-                        </TouchableOpacity> */}
+                        {Platform.OS === 'android' && (
+                            <TouchableOpacity
+                                style={styles.fbButton}
+                                activeOpacity={0.85}
+                                onPress={handleFacebookSignIn}
+                            >
+                                <FacebookIcon width={22} height={22} />
+                                <Text style={styles.fbButtonText}>Continue with Facebook</Text>
+                            </TouchableOpacity>
+                        )}
                         <TouchableOpacity
                             style={styles.fbButton}
                             activeOpacity={0.85}

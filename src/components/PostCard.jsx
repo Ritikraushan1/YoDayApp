@@ -19,6 +19,15 @@ const PostCard = ({ currentPost, answer, handleAnswer, onPress }) => {
         day: "numeric",
     });
 
+    // ✅ Check if user has liked or disliked
+    const isLiked = answer === "yes" || liked_by_you;
+    const isDisliked = answer === "no" || disliked_by_you;
+
+    // ✅ Format count - hide if 0
+    const formatCount = (count) => {
+        return count > 0 ? ` (${count})` : "";
+    };
+
     return (
         <Pressable style={styles.postScreen} onPress={onPress}>
             {/* Header */}
@@ -37,36 +46,34 @@ const PostCard = ({ currentPost, answer, handleAnswer, onPress }) => {
                     <Pressable
                         style={[
                             styles.choiceButton,
-                            (answer === "yes" || liked_by_you) && styles.selectedYes,
+                            isLiked && styles.selectedYes,
                         ]}
                         onPress={() => handleAnswer(currentPost.post_code, "like")}
                     >
                         <Text
                             style={[
                                 styles.choiceText,
-                                (answer === "yes" || liked_by_you) &&
-                                styles.choiceTextSelected,
+                                isLiked && styles.choiceTextSelected,
                             ]}
                         >
-                            👍 Yes ({like_count})
+                            👍 YES{formatCount(like_count)}
                         </Text>
                     </Pressable>
 
                     <Pressable
                         style={[
                             styles.choiceButton,
-                            (answer === "no" || disliked_by_you) && styles.selectedNo,
+                            isDisliked && styles.selectedNo,
                         ]}
                         onPress={() => handleAnswer(currentPost.post_code, "dislike")}
                     >
                         <Text
                             style={[
                                 styles.choiceText,
-                                (answer === "no" || disliked_by_you) &&
-                                styles.choiceTextSelected,
+                                isDisliked && styles.choiceTextSelected,
                             ]}
                         >
-                            👎 No ({dislike_count})
+                            👎 NO{formatCount(dislike_count)}
                         </Text>
                     </Pressable>
                 </View>
@@ -117,10 +124,17 @@ const styles = StyleSheet.create({
         borderColor: colors.box_border_color,
         minWidth: 120,
         alignItems: "center",
+        backgroundColor: "transparent", // ✅ No background by default
     },
     choiceText: { fontSize: 16, color: "#444" },
-    selectedYes: { backgroundColor: "#d4edda", borderColor: "#28a745" },
-    selectedNo: { backgroundColor: "#f8d7da", borderColor: "#7030A0" },
+    selectedYes: {
+        backgroundColor: "#d4edda",
+        borderColor: "#28a745"
+    },
+    selectedNo: {
+        backgroundColor: "#f8d7da",
+        borderColor: "#7030A0"
+    },
     choiceTextSelected: { fontWeight: "600" },
 });
 

@@ -12,17 +12,19 @@ import {
 import PostCard from "../../components/PostCard";
 import { BackIcon } from "../../assets/icon/MenuIcons";
 import { PostService } from "../../api/PostService";
+import { useDispatch, useSelector } from "react-redux";
+import { setSearchResults, updatePostReaction } from "../../redux/slices/postsSlice";
 
 const SearchPostsScreen = ({ navigation }) => {
     const [query, setQuery] = useState("");
     const [loading, setLoading] = useState(false);
-    const [results, setResults] = useState([]);
-    const [answerMap, setAnswerMap] = useState({});
+    const dispatch = useDispatch();
+    const results = useSelector((state) => state.posts.searchResults);
 
     // 🔎 Fetch posts by query
     const getSearchedPosts = async (searchText) => {
         if (!searchText.trim()) {
-            setResults([]);
+            dispatch(setSearchResults([]));
             return;
         }
         setLoading(true);
@@ -35,7 +37,7 @@ const SearchPostsScreen = ({ navigation }) => {
                 dislikedByUser: post.disliked_by_you ?? false,
             }));
 
-            setResults(postsWithReactions);
+            dispatch(setSearchResults(postsWithReactions));
         } catch (error) {
             console.error("Search error:", error);
         } finally {
@@ -49,7 +51,7 @@ const SearchPostsScreen = ({ navigation }) => {
             if (query.trim()) {
                 getSearchedPosts(query);
             } else {
-                setResults([]);
+                dispatch(setSearchResults([]));
             }
         }, 500); // wait 500ms after user stops typing
 
@@ -76,52 +78,13 @@ const SearchPostsScreen = ({ navigation }) => {
                 }
             }
 
-            // ✅ Optimistic UI update (no refetch needed)
-            setResults(prev =>
-                prev.map(post => {
-                    if (post.post_code !== postCode) return post;
-
-                    const updatedPost = { ...post };
-
-                    if (type === "like") {
-                        if (post.likedByUser) {
-                            // ❌ remove like
-                            updatedPost.likedByUser = false;
-                            updatedPost.like_count = Math.max(0, (post.like_count ?? 0) - 1);
-                        } else {
-                            // 👍 add like
-                            updatedPost.likedByUser = true;
-                            updatedPost.like_count = (post.like_count ?? 0) + 1;
-
-                            // 🔄 remove dislike
-                            if (post.dislikedByUser) {
-                                updatedPost.dislikedByUser = false;
-                                updatedPost.dislike_count = Math.max(0, (post.dislike_count ?? 0) - 1);
-                            }
-                        }
-                    }
-
-                    if (type === "dislike") {
-                        if (post.dislikedByUser) {
-                            // ❌ remove dislike
-                            updatedPost.dislikedByUser = false;
-                            updatedPost.dislike_count = Math.max(0, (post.dislike_count ?? 0) - 1);
-                        } else {
-                            // 👎 add dislike
-                            updatedPost.dislikedByUser = true;
-                            updatedPost.dislike_count = (post.dislike_count ?? 0) + 1;
-
-                            // 🔄 remove like
-                            if (post.likedByUser) {
-                                updatedPost.likedByUser = false;
-                                updatedPost.like_count = Math.max(0, (post.like_count ?? 0) - 1);
-                            }
-                        }
-                    }
-
-                    return updatedPost;
-                })
-            );
+            // ✅ Dispatch to Redux (handles optimistic update globally)
+            dispatch(updatePostReaction({
+                postCode,
+                type,
+                isLiked: type === "like" && !targetPost.likedByUser,
+                isDisliked: type === "dislike" && !targetPost.dislikedByUser
+            }));
 
         } catch (error) {
             console.error("Failed to react to post", error);
