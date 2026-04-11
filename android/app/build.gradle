@@ -92,8 +92,8 @@ android {
         applicationId "com.yoday"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion 35
-        versionCode 128
-        versionName  "1.2.8"
+        versionCode 129
+        versionName  "1.2.9"
         buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", "false"
     }
     signingConfigs {
