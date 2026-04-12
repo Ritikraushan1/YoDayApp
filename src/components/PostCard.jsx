@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import colors from "../styles/colors";
 
-const PostCard = ({ currentPost, answer, handleAnswer, onPress }) => {
+const PostCard = ({ currentPost, answer, handleAnswer, onPress, isLiked, isDisliked }) => {
     const {
         content,
         created_at,
@@ -19,9 +19,6 @@ const PostCard = ({ currentPost, answer, handleAnswer, onPress }) => {
         day: "numeric",
     });
 
-    // ✅ Check if user has liked or disliked
-    const isLiked = answer === "yes" || liked_by_you;
-    const isDisliked = answer === "no" || disliked_by_you;
 
     // ✅ Format count - hide if 0
     const formatCount = (count) => {

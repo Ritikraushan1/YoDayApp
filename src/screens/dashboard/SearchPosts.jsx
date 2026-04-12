@@ -133,6 +133,8 @@ const SearchPostsScreen = ({ navigation }) => {
                             }
                             handleAnswer={handleAnswer}
                             onPress={() => onPressPostCard(item)}
+                            isLiked={item.likedByUser}
+                            isDisliked={item.dislikedByUser}
                         />
                     )}
                     contentContainerStyle={styles.list}
