@@ -19,6 +19,8 @@ const CommentActionSheet = ({
     showDelete = false,
     onDelete,
     onReact, // 👈 new callback for reactions
+    showBlock = false,
+    onBlock,
 }) => {
     return (
         <Modal
@@ -62,6 +64,18 @@ const CommentActionSheet = ({
                         </Pressable>
                     )}
 
+                    {showBlock && (
+                        <Pressable
+                            style={styles.option}
+                            onPress={() => {
+                                onClose();
+                                onBlock?.();
+                            }}
+                        >
+                            <Text style={[styles.optionText, { color: "red" }]}>Block User</Text>
+                        </Pressable>
+                    )}
+
                     <Pressable style={styles.option} onPress={onReport}>
                         <Text style={styles.optionText}>Report</Text>
                     </Pressable>
@@ -74,6 +88,7 @@ const CommentActionSheet = ({
         </Modal>
     );
 };
+
 
 export default CommentActionSheet;
 

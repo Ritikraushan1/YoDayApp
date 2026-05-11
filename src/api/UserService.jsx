@@ -151,8 +151,58 @@ async function deleteUserProfile(data) {
     });
 }
 
+async function blockUser(blockedId) {
+    let url = Config.API_URL + YDAPI.BLOCK_USER;
+    const user = await getUserInformation();
+    let tokenval = user?.token;
+    let headers = {
+        Authorization: `Bearer ${tokenval}`
+    }
+    return new Promise((resolve, reject) => {
+        axios
+            .post(url, { blockedId }, { headers: headers })
+            .then(response => {
+                let result = '';
+                switch (response.status) {
+                    case 201:
+                    case 200:
+                        result = {
+                            status: response.status,
+                            data: response.data,
+                        };
+                        break;
+                    case 400:
+                        result = {
+                            status: response.status,
+                            message: response.data.message,
+                        };
+                        break;
+                    case 500:
+                        result = {
+                            status: response.status,
+                            message: 'Server Error',
+                        };
+                        break;
+                    default:
+                        result = {
+                            status: response.status,
+                            message: 'unhandled',
+                        };
+                        break;
+                }
+
+                resolve(result);
+            })
+            .catch(err => {
+                console.log("error", err)
+                reject(err);
+            });
+    });
+}
+
 export const UserService = {
     updateUserProfile,
     deleteUserProfile,
-    getUserInformation
+    getUserInformation,
+    blockUser,
 }

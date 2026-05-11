@@ -39,7 +39,7 @@ const LoginScreen = ({ navigation }) => {
         if (!isChecked) {
             setCustomAlert({
                 visible: true,
-                message: "Please accept the Terms and Conditions before proceeding.",
+                message: "Please accept the Terms of Use Agreement before proceeding.",
                 showCancel: false,
                 onOk: () => setCustomAlert(prev => ({ ...prev, visible: false })),
             });
@@ -109,7 +109,7 @@ const LoginScreen = ({ navigation }) => {
         if (!isChecked) {
             setCustomAlert({
                 visible: true,
-                message: "Please accept the Terms and Conditions before proceeding.",
+                message: "Please accept the Terms of Use Agreement before proceeding.",
                 showCancel: false,
                 onOk: () => setCustomAlert(prev => ({ ...prev, visible: false })),
             });
@@ -168,7 +168,7 @@ const LoginScreen = ({ navigation }) => {
                                     style={styles.linkText}
                                     onPress={() => navigation.navigate('Terms')}
                                 >
-                                    Terms & Conditions
+                                    Terms of Use Agreement
                                 </Text>
                             </Text>
                         </TouchableOpacity>

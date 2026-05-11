@@ -122,7 +122,7 @@ const Posts = ({ navigation }) => {
 
 
 
-// REMOVED useEffect for currentPost, it's now derived directly from posts[currentIndex]
+    // REMOVED useEffect for currentPost, it's now derived directly from posts[currentIndex]
 
     useFocusEffect(
         React.useCallback(() => {
@@ -551,7 +551,7 @@ const Posts = ({ navigation }) => {
                                             style={[styles.choiceButton, answer === "yes" && styles.selectedYes]}
                                             onPress={() => handleAnswer(currentPost.post_code, "like")}
                                         >
-                                            <Text style={[styles.choiceText, answer === "yes" && styles.choiceTextSelected]}>Yes</Text>
+                                            <Text style={[styles.choiceText, answer === "yes" && styles.choiceTextSelected]}>YES</Text>
                                             {answer && likeCount > 0 && (
                                                 <Text style={styles.countText}>
                                                     {likeCount}
@@ -563,7 +563,7 @@ const Posts = ({ navigation }) => {
                                             style={[styles.choiceButton, answer === "no" && styles.selectedNo]}
                                             onPress={() => handleAnswer(currentPost.post_code, "dislike")}
                                         >
-                                            <Text style={[styles.choiceText, answer === "no" && styles.choiceTextSelected]}>No</Text>
+                                            <Text style={[styles.choiceText, answer === "no" && styles.choiceTextSelected]}>NO</Text>
                                             {answer && dislikeCount > 0 && (
                                                 <Text style={styles.countText}>
                                                     {dislikeCount}

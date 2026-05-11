@@ -13,7 +13,7 @@ const Terms = ({ navigation }) => {
     return (
         <View style={{ flex: 1, backgroundColor: "#fff" }}>
             <SimpleHeader
-                title="Terms & Privacy"
+                title="Terms of Use & Privacy"
                 onBack={() => navigation.goBack()}
             />
 
@@ -41,7 +41,7 @@ const Terms = ({ navigation }) => {
                                     selectedTab === "terms" && styles.activeTabText,
                                 ]}
                             >
-                                TERMS & CONDITIONS
+                                TERMS OF USE
                             </Text>
                         </Pressable>
 

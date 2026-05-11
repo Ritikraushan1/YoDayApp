@@ -8,6 +8,7 @@ import {
     TouchableOpacity,
     Image,
     useWindowDimensions,
+    Alert,
 } from "react-native";
 import CommentActionSheet from "./CommentActionsSheet";
 import Clipboard from "@react-native-clipboard/clipboard";
@@ -16,6 +17,8 @@ import { CommentsService } from "../api/CommentService";
 import CommentInput from "./CommentInput";
 import ImageModal from "./ImageModal";
 import { useSelector } from "react-redux";
+import { UserService } from "../api/UserService";
+
 
 const reactions = [
     { id: "like", emoji: "👍", label: "Like" },
@@ -48,6 +51,11 @@ const CommentCard = ({
     const [showReportModal, setShowReportModal] = useState(false);
     const [showActionSheet, setShowActionSheet] = useState(false);
     const [imageModalVisible, setImageModalVisible] = useState(false);
+    const [isReported, setIsReported] = useState(false);
+
+    if (isReported) {
+        return null;
+    }
 
     const MAX_LEFT_GAP = Math.max(0, width * (1 - MIN_CARD_RATIO)); // why: guarantee >=60% visible
     const nextLevel = Math.min(level + 1, MAX_LEVEL);
@@ -77,14 +85,51 @@ const CommentCard = ({
         setShowReportModal(true);
     };
 
-    const submitReport = async (data) => {
-        await CommentsService.addNewReportComments(
-            data.commentId,
-            data.reason,
-            data?.reason,
-            data?.details,
-            data?.post_code
+    const handleBlock = () => {
+        setShowActionSheet(false);
+        Alert.alert(
+            "Block User",
+            `Are you sure you want to block ${comment.username || "this user"}?`,
+            [
+                {
+                    text: "Cancel",
+                    style: "cancel"
+                },
+                {
+                    text: "Block",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            const result = await UserService.blockUser(comment.user_id);
+                            if (result.status === 200 || result.status === 201) {
+                                Alert.alert("Success", `${comment.username || "User"} has been blocked successfully.`);
+                                setIsReported(true); // Hides the comment locally instantly
+                            } else {
+                                Alert.alert("Error", result.message || "Failed to block user. Please try again.");
+                            }
+                        } catch (error) {
+                            console.error("Block user error", error);
+                            Alert.alert("Error", "Something went wrong while blocking this user.");
+                        }
+                    }
+                }
+            ]
         );
+    };
+
+    const submitReport = async (data) => {
+        setIsReported(true);
+        try {
+            await CommentsService.addNewReportComments(
+                data.commentId,
+                data.reason,
+                data?.reason,
+                data?.details,
+                data?.post_code
+            );
+        } catch (error) {
+            console.error("Error submitting report:", error);
+        }
     };
 
     const handleCopy = () => {
@@ -93,6 +138,7 @@ const CommentCard = ({
 
     const toggleReply = () => {
         setShowReplyInput((v) => !v);
+
         if (comment.replies?.length > 0) setShowReplies(true);
     };
 
@@ -187,7 +233,10 @@ const CommentCard = ({
                     setShowActionSheet(false);
                     onReact?.(comment, reactionType);
                 }}
+                showBlock={comment.user_id !== user?.id}
+                onBlock={handleBlock}
             />
+
 
             <ReportModal
                 visible={showReportModal}

@@ -387,7 +387,7 @@ export const IconMap = {
     "Liked Posts": LikedIcon,
     "Previous Posts": PreviousIcon,
     "Help & Support": HelpIcon,
-    "Terms & Conditions": TermsIcon,
+    "Terms of Use Agreement": TermsIcon,
     "About Us": AboutIcon,
     "Contact Us": MessageCircleIcon,
     "Settings": SettingsIcon,

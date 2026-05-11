@@ -109,7 +109,7 @@ const menuOptions = [
     // { key: 'Liked Posts', label: 'Liked Posts', icon: 'home' },
     // { key: 'Previous Posts', label: 'Previous Posts', icon: 'users' },
     { key: 'Help & Support', label: 'Help & Support', icon: 'bar-chart-2', route: 'Help' },
-    { key: 'Terms & Conditions', label: 'Terms & Conditions', icon: 'clock', route: 'Terms' },
+    { key: 'Terms of Use Agreement', label: 'Terms of Use Agreement', icon: 'clock', route: 'Terms' },
     // { key: 'About Us', label: 'About Us', icon: 'user-plus', route: 'About' },
     { key: 'Contact Us', label: 'Contact Us', icon: 'message-circle', route: 'Contact' },
     // { key: 'Program', label: 'Approach Anxiety Program', icon: 'activity' },
