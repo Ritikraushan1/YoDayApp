@@ -9,10 +9,13 @@ import {
     KeyboardAvoidingView,
     Platform,
     Alert,
+    Keyboard,
+    TouchableWithoutFeedback,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthService } from '../../api/AuthService';
+import ScreenWrapper from '../../components/ScreenWrapper';
 
 const { width } = Dimensions.get("window");
 
@@ -44,45 +47,46 @@ const SubmitMobileScreen = ({ navigation }) => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <LinearGradient
-                colors={['#7030A0', '#7030A0']}
-                style={styles.background}
+            <ScreenWrapper
+                keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
             >
-                <KeyboardAvoidingView
-                    style={styles.card}
-                    behavior={Platform.OS === "ios" ? "padding" : undefined}
+                <LinearGradient
+                    colors={['#7030A0', '#7030A0']}
+                    style={styles.background}
                 >
-                    <Text style={styles.title}>Enter Your Mobile Number</Text>
-                    <Text style={styles.subtitle}>
-                        We'll send you a verification code
-                    </Text>
+                    <View style={styles.card}>
+                        <Text style={styles.title}>Enter Your Mobile Number</Text>
+                        <Text style={styles.subtitle}>
+                            We'll send you a verification code
+                        </Text>
 
-                    {/* Mobile Input */}
-                    <View style={styles.inputRow}>
-                        <View style={styles.countryCodeBox}>
-                            <Text style={styles.countryCode}>{country_code}</Text>
+                        {/* Mobile Input */}
+                        <View style={styles.inputRow}>
+                            <View style={styles.countryCodeBox}>
+                                <Text style={styles.countryCode}>{country_code}</Text>
+                            </View>
+                            <TextInput
+                                style={styles.mobileInput}
+                                placeholder="Enter mobile number"
+                                placeholderTextColor="#888"
+                                keyboardType="number-pad"
+                                maxLength={10}
+                                value={mobile}
+                                onChangeText={setMobile}
+                            />
                         </View>
-                        <TextInput
-                            style={styles.mobileInput}
-                            placeholder="Enter mobile number"
-                            placeholderTextColor="#888"
-                            keyboardType="number-pad"
-                            maxLength={10}
-                            value={mobile}
-                            onChangeText={setMobile}
-                        />
-                    </View>
 
-                    {/* Submit Button */}
-                    <TouchableOpacity
-                        style={styles.submitButton}
-                        activeOpacity={0.85}
-                        onPress={() => handleSubmitMobile()}
-                    >
-                        <Text style={styles.submitButtonText}>Continue</Text>
-                    </TouchableOpacity>
-                </KeyboardAvoidingView>
-            </LinearGradient>
+                        {/* Submit Button */}
+                        <TouchableOpacity
+                            style={styles.submitButton}
+                            activeOpacity={0.85}
+                            onPress={() => handleSubmitMobile()}
+                        >
+                            <Text style={styles.submitButtonText}>Continue</Text>
+                        </TouchableOpacity>
+                    </View>
+                </LinearGradient>
+            </ScreenWrapper>
         </SafeAreaView>
     );
 };

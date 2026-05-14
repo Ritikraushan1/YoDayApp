@@ -8,10 +8,13 @@ import {
     Dimensions,
     KeyboardAvoidingView,
     Platform,
+    Keyboard,
+    TouchableWithoutFeedback,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthService } from '../../api/AuthService';
+import ScreenWrapper from '../../components/ScreenWrapper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useDispatch } from 'react-redux';
 import { setUserInfo } from '../../redux/slices/userSlice';
@@ -84,45 +87,46 @@ const SubmitOtpScreen = ({ navigation, route }) => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <LinearGradient
-                colors={['#7030A0', '#7030A0']}
-                style={styles.background}
+            <ScreenWrapper
+                keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
             >
-                <KeyboardAvoidingView
-                    style={styles.card}
-                    behavior={Platform.OS === "ios" ? "padding" : undefined}
+                <LinearGradient
+                    colors={['#7030A0', '#7030A0']}
+                    style={styles.background}
                 >
-                    <Text style={styles.title}>Enter OTP</Text>
-                    <Text style={styles.subtitle}>
-                        Please enter the 6-digit code sent to your mobile
-                    </Text>
+                    <View style={styles.card}>
+                        <Text style={styles.title}>Enter OTP</Text>
+                        <Text style={styles.subtitle}>
+                            Please enter the 6-digit code sent to your mobile
+                        </Text>
 
-                    {/* OTP Input */}
-                    <View style={styles.otpRow}>
-                        {otp.map((digit, index) => (
-                            <TextInput
-                                key={index}
-                                style={styles.otpInput}
-                                value={digit}
-                                onChangeText={(text) => handleChange(text, index)}
-                                keyboardType="number-pad"
-                                maxLength={1}
-                                ref={(ref) => (inputs.current[index] = ref)}
-                                onKeyPress={(e) => handleKeyPress(e, index)}
-                            />
-                        ))}
+                        {/* OTP Input */}
+                        <View style={styles.otpRow}>
+                            {otp.map((digit, index) => (
+                                <TextInput
+                                    key={index}
+                                    style={styles.otpInput}
+                                    value={digit}
+                                    onChangeText={(text) => handleChange(text, index)}
+                                    keyboardType="number-pad"
+                                    maxLength={1}
+                                    ref={(ref) => (inputs.current[index] = ref)}
+                                    onKeyPress={(e) => handleKeyPress(e, index)}
+                                />
+                            ))}
+                        </View>
+
+                        {/* Submit Button */}
+                        <TouchableOpacity
+                            style={styles.submitButton}
+                            activeOpacity={0.85}
+                            onPress={handleSubmitOtp}
+                        >
+                            <Text style={styles.submitButtonText}>Verify</Text>
+                        </TouchableOpacity>
                     </View>
-
-                    {/* Submit Button */}
-                    <TouchableOpacity
-                        style={styles.submitButton}
-                        activeOpacity={0.85}
-                        onPress={handleSubmitOtp}
-                    >
-                        <Text style={styles.submitButtonText}>Verify</Text>
-                    </TouchableOpacity>
-                </KeyboardAvoidingView>
-            </LinearGradient>
+                </LinearGradient>
+            </ScreenWrapper>
         </SafeAreaView>
     );
 };

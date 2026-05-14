@@ -8,6 +8,8 @@ import {
     Platform,
     ScrollView,
     Image,
+    Keyboard,
+    TouchableWithoutFeedback,
 } from 'react-native';
 import CustomTextInput from '../../components/CustomTextInput';
 import { useDispatch } from 'react-redux';
@@ -19,6 +21,7 @@ import { saveUserSession, UserService } from '../../api/UserService';
 import { setUserInfo } from '../../redux/slices/userSlice';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { UploadService } from '../../api/UploadService';
+import ScreenWrapper from '../../components/ScreenWrapper';
 
 const UpdateProfileScreen = ({ navigation, route }) => {
     const { id, token } = route.params; // Pass existing user if available
@@ -84,85 +87,84 @@ const UpdateProfileScreen = ({ navigation, route }) => {
     };
 
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.container}
-        >
-            <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-                {/* Profile Avatar */}
-                <View style={styles.avatarWrapper}>
-                    {avatar ? (
-                        <Image source={{ uri: avatar }} style={styles.avatar} />
-                    ) : (
-                        <View style={[styles.avatar, { backgroundColor: '#ccc', justifyContent: 'center', alignItems: 'center' }]}>
-                            <Text style={{ color: '#fff', fontSize: 32, fontWeight: 'bold' }}>
-                                {fullName ? fullName.slice(0, 2).toUpperCase() : 'NA'}
-                            </Text>
-                        </View>
-                    )}
-                    <TouchableOpacity style={styles.uploadIcon} onPress={handleChooseImage}>
-                        <UploadIcon size={16} color="#fff" />
+        <ScreenWrapper behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <View style={styles.container}>
+                <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+                    {/* Profile Avatar */}
+                    <View style={styles.avatarWrapper}>
+                        {avatar ? (
+                            <Image source={{ uri: avatar }} style={styles.avatar} />
+                        ) : (
+                            <View style={[styles.avatar, { backgroundColor: '#ccc', justifyContent: 'center', alignItems: 'center' }]}>
+                                <Text style={{ color: '#fff', fontSize: 32, fontWeight: 'bold' }}>
+                                    {fullName ? fullName.slice(0, 2).toUpperCase() : 'NA'}
+                                </Text>
+                            </View>
+                        )}
+                        <TouchableOpacity style={styles.uploadIcon} onPress={handleChooseImage}>
+                            <UploadIcon size={16} color="#fff" />
+                        </TouchableOpacity>
+                    </View>
+                    <Text style={styles.phoneText}>{fullName}</Text>
+
+                    {/* Name */}
+                    <Text style={styles.label}>Name*</Text>
+                    <CustomTextInput
+                        placeholder="Full Name"
+                        value={fullName}
+                        onChangeText={setFullName}
+                        maxLength={30}
+                    />
+
+                    {/* Mobile */}
+                    <Text style={styles.label}>Mobile No.</Text>
+                    <CustomTextInput
+                        placeholder="Mobile Number"
+                        value={phone}
+                        onChangeText={setPhone}
+                        keyboardType="phone-pad"
+                        maxLength={10}
+                    />
+
+                    {/* Gender */}
+                    <CustomDropDown
+                        label="Gender"
+                        placeholder="Select Gender"
+                        value={gender}
+                        dropDownItems={["Male", "Female", "Other"]}
+                        onSelect={setGender}
+                        error={!gender}
+                        errorMessage="Please select gender"
+                    />
+
+                    {/* Email */}
+                    <CustomTextInput
+                        label="Email Address"
+                        placeholder="Enter your email"
+                        value={email}
+                        onChangeText={setEmail}
+                        keyboardType="email-address"
+                        error={!email}
+                        maxLength={50}
+                        errorMessage="Email is required"
+                    />
+
+                    {/* Description */}
+                    <Text style={styles.label}>Description</Text>
+                    <CustomTextInput
+                        placeholder="About You"
+                        value={description}
+                        onChangeText={setDescription}
+                        maxLength={200}
+                    />
+
+                    {/* Submit */}
+                    <TouchableOpacity style={styles.submitButton} onPress={handleSave}>
+                        <Text style={styles.submitText}>SUBMIT</Text>
                     </TouchableOpacity>
-                </View>
-                <Text style={styles.phoneText}>{fullName}</Text>
-
-                {/* Name */}
-                <Text style={styles.label}>Name*</Text>
-                <CustomTextInput
-                    placeholder="Full Name"
-                    value={fullName}
-                    onChangeText={setFullName}
-                    maxLength={30}
-                />
-
-                {/* Mobile */}
-                <Text style={styles.label}>Mobile No.</Text>
-                <CustomTextInput
-                    placeholder="Mobile Number"
-                    value={phone}
-                    onChangeText={setPhone}
-                    keyboardType="phone-pad"
-                    maxLength={10}
-                />
-
-                {/* Gender */}
-                <CustomDropDown
-                    label="Gender"
-                    placeholder="Select Gender"
-                    value={gender}
-                    dropDownItems={["Male", "Female", "Other"]}
-                    onSelect={setGender}
-                    error={!gender}
-                    errorMessage="Please select gender"
-                />
-
-                {/* Email */}
-                <CustomTextInput
-                    label="Email Address"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    error={!email}
-                    maxLength={50}
-                    errorMessage="Email is required"
-                />
-
-                {/* Description */}
-                <Text style={styles.label}>Description</Text>
-                <CustomTextInput
-                    placeholder="About You"
-                    value={description}
-                    onChangeText={setDescription}
-                    maxLength={200}
-                />
-
-                {/* Submit */}
-                <TouchableOpacity style={styles.submitButton} onPress={handleSave}>
-                    <Text style={styles.submitText}>SUBMIT</Text>
-                </TouchableOpacity>
-            </ScrollView>
-        </KeyboardAvoidingView>
+                </ScrollView>
+            </View>
+        </ScreenWrapper>
     );
 };
 

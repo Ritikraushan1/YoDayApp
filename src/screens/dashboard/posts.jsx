@@ -31,6 +31,7 @@ import { PERMISSIONS, RESULTS, request, check } from 'react-native-permissions';
 import CommentInput from "../../components/CommentInput";
 import NetInfo from "@react-native-community/netinfo";
 import colors from "../../styles/colors";
+import ScreenWrapper from "../../components/ScreenWrapper";
 
 
 const { height } = Dimensions.get("window");
@@ -436,8 +437,7 @@ const Posts = ({ navigation }) => {
         : null;
 
     return (
-        <KeyboardAvoidingView style={{ flex: 1 }}
-            behavior={Platform.OS === "ios" ? "padding" : 'height'}>
+        <ScreenWrapper behavior={Platform.OS === "ios" ? "padding" : 'height'}>
             <View style={{ flex: 1, backgroundColor: "transparent", height: '100%' }} >
                 {/* Header */}
 
@@ -633,7 +633,7 @@ const Posts = ({ navigation }) => {
                 />
 
             </View>
-        </KeyboardAvoidingView>
+        </ScreenWrapper>
     );
 };
 
